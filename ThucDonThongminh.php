@@ -132,7 +132,7 @@ function danhSachMucTieu(): array
             'mo_ta' => 'Tăng khẩu phần, ưu tiên món giàu năng lượng, đạm và chất béo tốt để tăng cân lành mạnh.',
         ],
         'ho_tro_benh_ly' => [
-            'nhan' => 'Hỗ trợ bệnh lý / Cảnh báo sức khỏe',
+            'nhan' => 'Hỗ trợ bệnh lý / Cảnh báo dinh dưỡng',
             'mo_ta' => 'Điều chỉnh chế độ ăn theo chỉ số máu.',
         ],
         'cai_thien_tieu_hoa' => [

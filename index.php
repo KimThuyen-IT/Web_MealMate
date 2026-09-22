@@ -14,7 +14,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0 animate-fade-in-up">
                 <div class="badge bg-white text-success mb-3 px-3 py-2 shadow-sm rounded-pill">✨ Phiên bản mới 2026</div>
-                <h1 class="display-4 fw-bold mb-4" style="line-height: 1.2;">Kiểm soát Dinh dưỡng,<br><span style="color: #fbbf24;">Làm chủ Sức khỏe</span></h1>
+                <h1 class="display-4 fw-bold mb-4" style="line-height: 1.2;">Kiểm soát Dinh dưỡng,<br><span style="color: #fbbf24;">Làm chủ Mục tiêu</span></h1>
                 <p class="lead mb-4 opacity-75">Theo dõi bữa ăn, tính toán lượng calories tự động và nhận lời khuyên từ Trợ lý AI thông minh để đạt được vóc dáng mơ ước của bạn.</p>
                 <div class="d-grid gap-3 d-md-flex justify-content-md-start">
                     <?php if (!isset($_SESSION['user_id'])): ?>
@@ -86,7 +86,7 @@ require_once __DIR__ . '/includes/header.php';
                             <i class="bi bi-robot fs-2"></i>
                         </div>
                         <h4 class="card-title fw-bold mb-3">AI Cố vấn</h4>
-                        <p class="card-text text-muted">Trò chuyện với Trợ lý ảo AI bất cứ lúc nào để hỏi đáp về sức khỏe và dinh dưỡng.</p>
+                        <p class="card-text text-muted">Trò chuyện với Trợ lý ảo AI bất cứ lúc nào để hỏi đáp về dinh dưỡng và mục tiêu cá nhân.</p>
                     </div>
                 </div>
             </div>

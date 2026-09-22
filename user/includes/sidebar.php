@@ -13,7 +13,7 @@ $sidebar_active = match ($sidebar_page) {
 
 $sidebar_items = [
     ['key' => 'dashboard', 'url' => '/user/dashboard.php', 'icon' => 'bi-speedometer2', 'label' => 'Dashboard'],
-    ['key' => 'profile', 'url' => '/user/profile.php', 'icon' => 'bi-person-circle', 'label' => 'Hồ sơ sức khỏe'],
+    ['key' => 'profile', 'url' => '/user/profile.php', 'icon' => 'bi-person-circle', 'label' => 'Hồ sơ cá nhân'],
     ['key' => 'meals', 'url' => '/user/meals.php', 'icon' => 'bi-journal-text', 'label' => 'Nhật ký bữa ăn'],
     ['key' => 'weight', 'url' => '/user/weight-logs.php', 'icon' => 'bi-graph-up', 'label' => 'Cân nặng'],
     ['key' => 'mystery_box', 'url' => '/mystery-box.php', 'icon' => 'bi-gift', 'label' => 'Hôm nay ăn gì'],
@@ -22,7 +22,7 @@ $sidebar_items = [
 ];
 ?>
 <aside class="user-global-sidebar" aria-label="Điều hướng chức năng người dùng">
-    <nav class="list-group user-sidebar-nav" aria-label="Chức năng sức khỏe">
+    <nav class="list-group user-sidebar-nav" aria-label="Chức năng cá nhân">
         <?php foreach ($sidebar_items as $sidebar_item): ?>
             <?php $is_active = $sidebar_active === $sidebar_item['key']; ?>
             <a href="<?php echo isset($sidebar_item['onclick']) ? '#' : BASE_URL . $sidebar_item['url']; ?>"

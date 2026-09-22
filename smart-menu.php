@@ -233,7 +233,7 @@ if (isset($_GET['che_do'])) {
 <div class="hero-smart-menu text-center">
     <div class="container" data-aos="fade-up">
         <h1 class="display-4 fw-bold text-dark mb-3">🍽️ Gợi Ý Thực Đơn <span class="text-success">Thông Minh AI</span></h1>
-        <p class="lead text-muted mb-0">Thiết kế bữa ăn hoàn hảo dựa trên nhu cầu, sở thích và mục tiêu sức khỏe của bạn.</p>
+        <p class="lead text-muted mb-0">Thiết kế bữa ăn hoàn hảo dựa trên nhu cầu, sở thích và mục tiêu cá nhân của bạn.</p>
     </div>
 </div>
 
@@ -304,7 +304,7 @@ if (isset($_GET['che_do'])) {
                         <div class="tab-pane fade <?= ($che_do === 'theo_muc_tieu') ? 'show active' : '' ?>" id="pills-muctieu" role="tabpanel">
                             <div class="row">
                                 <div class="col-md-12 mb-4">
-                                    <label class="form-label fw-bold">Mục tiêu sức khỏe của bạn:</label>
+                                    <label class="form-label fw-bold">Mục tiêu cá nhân của bạn:</label>
                                     <select name="muc_tieu" id="muc_tieu_select" class="form-select form-control-custom form-select-lg" onchange="hienThiMoTaMucTieu()">
                                         <?php foreach (danhSachMucTieu() as $ma => $mt): ?>
                                             <option value="<?= htmlspecialchars($ma) ?>" data-mota="<?= htmlspecialchars($mt['mo_ta']) ?>" <?= (isset($_GET['muc_tieu']) && $_GET['muc_tieu'] === $ma) ? 'selected' : '' ?>>

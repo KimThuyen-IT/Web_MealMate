@@ -8,18 +8,18 @@ require_once __DIR__ . '/includes/header.php';
 <div class="bg-success text-white py-5">
     <div class="container text-center py-4">
         <h1 class="display-4 fw-bold">Khám Phá Các Tính Năng</h1>
-        <p class="lead mb-0">Công cụ toàn diện giúp bạn đạt được mục tiêu sức khỏe và vóc dáng</p>
+        <p class="lead mb-0">Công cụ toàn diện giúp bạn đạt được mục tiêu dinh dưỡng và vóc dáng</p>
     </div>
 </div>
 
 <div class="container py-5">
     <div class="row align-items-center mb-5">
         <div class="col-md-6 order-md-2 mb-4 mb-md-0">
-            <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80" alt="Hồ sơ sức khỏe" class="img-fluid rounded-4 shadow">
+            <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80" alt="Hồ sơ cá nhân" class="img-fluid rounded-4 shadow">
         </div>
         <div class="col-md-6 order-md-1 pe-md-5">
             <div class="text-success mb-3"><i class="bi bi-person-lines-fill fs-1"></i></div>
-            <h2 class="fw-bold mb-3">Hồ sơ sức khỏe cá nhân hóa</h2>
+            <h2 class="fw-bold mb-3">Hồ sơ cá nhân hóa</h2>
             <p class="text-muted fs-5">Cung cấp chiều cao, cân nặng, độ tuổi và mức độ vận động. Hệ thống sẽ tự động tính toán:</p>
             <ul class="list-unstyled mt-4">
                 <li class="mb-3 d-flex"><i class="bi bi-check-circle-fill text-success me-3 fs-5"></i> <div><strong>Chỉ số BMI:</strong> Đánh giá tình trạng cơ thể.</div></li>

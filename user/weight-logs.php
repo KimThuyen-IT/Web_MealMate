@@ -304,7 +304,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-0 text-success"><i class="bi bi-graph-up text-success me-2"></i>Theo dõi Cân nặng & Chỉ số BMI</h2>
-            <p class="text-muted mb-0">Quản lý cân nặng, theo dõi BMI và phân tích xu hướng sức khỏe thông minh.</p>
+            <p class="text-muted mb-0">Quản lý cân nặng, theo dõi BMI và phân tích xu hướng dinh dưỡng thông minh.</p>
         </div>
     </div>
 

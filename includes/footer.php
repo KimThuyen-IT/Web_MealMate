@@ -10,7 +10,7 @@
                 <a href="<?php echo BASE_URL; ?>" class="d-inline-block mb-3" aria-label="<?php echo htmlspecialchars(APP_NAME); ?>">
                     <img src="<?php echo BASE_URL; ?>/img/logo_cty.png" alt="<?php echo htmlspecialchars(APP_NAME); ?>" class="company-logo company-logo-footer" style="max-height: 72px; max-width: 240px; width: auto; object-fit: contain;">
                 </a>
-                <p class="text-muted">Hệ thống quản lý bữa ăn, theo dõi dinh dưỡng và chăm sóc sức khỏe cá nhân thông minh với trợ lý AI.</p>
+                <p class="text-muted">Hệ thống quản lý bữa ăn, theo dõi dinh dưỡng cá nhân thông minh với trợ lý AI.</p>
                 <div class="mt-4">
                     <a href="#" class="text-secondary me-3 fs-5"><i class="bi bi-facebook"></i></a>
                     <a href="#" class="text-secondary me-3 fs-5"><i class="bi bi-twitter"></i></a>
@@ -32,7 +32,7 @@
                     <li class="mb-2"><a href="<?php echo BASE_URL; ?>/contact.php" class="text-decoration-none text-muted">Liên hệ</a></li>
                     <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Điều khoản sử dụng</a></li>
                     <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Chính sách bảo mật</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Disclaimer sức khỏe</a></li>
+                    <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Disclaimer dinh dưỡng</a></li>
                 </ul>
             </div>
             <div class="col-lg-3 col-md-4 mb-4">
@@ -102,7 +102,7 @@
                                 <i class="bi bi-robot"></i>
                             </div>
                             <div class="bg-white border rounded p-2 small shadow-sm">
-                                Xin chào! Tôi là trợ lý ảo AI. Tôi có thể giúp gì cho mục tiêu sức khỏe của bạn hôm nay?
+                                Xin chào! Tôi là trợ lý ảo AI. Tôi có thể giúp gì cho mục tiêu dinh dưỡng của bạn hôm nay?
                             </div>
                         </div>
                     </div>
@@ -391,9 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <!-- Back Button (Trừ trang chủ) -->
 <?php if (basename($_SERVER['PHP_SELF']) != 'index.php'): ?>
-<div style="position: fixed; bottom: 20px; left: 20px; z-index: 1050;">
-    <button onclick="window.history.back()" class="btn btn-light rounded-circle shadow d-flex align-items-center justify-content-center border" style="width: 50px; height: 50px; opacity: 0.85; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85" title="Quay lại trang trước">
-        <i class="bi bi-arrow-left fs-4 text-dark"></i>
+<div class="floating-back-btn" style="position: fixed; bottom: 20px; left: 20px; z-index: 1040;">
+    <button onclick="window.history.back()" class="btn btn-light rounded-circle shadow d-flex align-items-center justify-content-center border" style="width: 48px; height: 48px; opacity: 0.88; transition: all 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.88" title="Quay lại trang trước">
+        <i class="bi bi-arrow-left fs-5 text-dark"></i>
     </button>
 </div>
 <?php endif; ?>

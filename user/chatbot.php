@@ -91,7 +91,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <div class="bg-white p-3 rounded shadow-sm d-inline-block border">
-                                Xin chào <b><?php echo htmlspecialchars($_SESSION['user_name'] ?? ''); ?></b>! Tôi là trợ lý ảo Gemini. Tôi có thể giúp gì cho mục tiêu sức khỏe của bạn hôm nay?
+                                Xin chào <b><?php echo htmlspecialchars($_SESSION['user_name'] ?? ''); ?></b>! Tôi là trợ lý ảo Gemini. Tôi có thể giúp gì cho mục tiêu dinh dưỡng của bạn hôm nay?
                             </div>
                         </div>
                     </div>

@@ -75,7 +75,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <div class="position-absolute" style="top: -50px; left: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(20px);"></div>
                             <div class="position-relative z-index-1">
                                 <h3 class="fw-bold mb-3">Chào mừng trở lại!</h3>
-                                <p class="small opacity-75">Hãy đăng nhập để tiếp tục theo dõi tiến trình sức khỏe và nhận lời khuyên từ Trợ lý AI của chúng tôi.</p>
+                                <p class="small opacity-75">Hãy đăng nhập để tiếp tục theo dõi tiến độ dinh dưỡng và nhận lời khuyên từ Trợ lý AI của chúng tôi.</p>
                             </div>
                         </div>
                         
@@ -104,7 +104,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     <div class="form-floating position-relative">
                                         <input type="password" class="form-control pe-5 <?php echo isset($field_errors['password']) ? 'is-invalid' : ''; ?>" id="floatingPassword" name="password" placeholder="Password" autocomplete="current-password" required>
                                         <label for="floatingPassword" class="text-muted"><i class="bi bi-lock me-2"></i>Mật khẩu</label>
-                                        <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPassword" aria-label="Hiện mật khẩu" aria-pressed="false">
+                                        <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPassword" aria-label="Hiện mật khẩu" aria-pressed="false" style="display: none;">
                                             <i class="bi bi-eye" aria-hidden="true"></i>
                                         </button>
                                         <div class="invalid-feedback" id="loginPasswordError"><?php echo $field_errors['password'] ?? 'Vui lòng nhập mật khẩu.'; ?></div>

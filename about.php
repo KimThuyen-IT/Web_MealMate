@@ -12,7 +12,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
         <div class="col-md-6">
             <h1 class="fw-bold mb-4">Về <?php echo APP_NAME; ?></h1>
-            <p class="lead text-muted">Chúng tôi tin rằng sức khỏe bắt đầu từ những bữa ăn hàng ngày. Sứ mệnh của chúng tôi là giúp bạn quản lý dinh dưỡng một cách dễ dàng và thông minh nhất.</p>
+            <p class="lead text-muted">Chúng tôi tin rằng dinh dưỡng tốt bắt đầu từ những bữa ăn hàng ngày. Sứ mệnh của chúng tôi là giúp bạn quản lý thực đơn một cách dễ dàng và thông minh nhất.</p>
             <p>Với sự phát triển của công nghệ AI, việc theo dõi lượng calo, lên thực đơn và duy trì một lối sống lành mạnh không còn là thách thức quá lớn. Hệ thống cung cấp cho bạn những công cụ toàn diện từ nhật ký bữa ăn đến trợ lý tư vấn cá nhân 24/7.</p>
             <div class="mt-4">
                 <a href="<?php echo BASE_URL; ?>/features.php" class="btn btn-success me-2">Khám phá tính năng</a>

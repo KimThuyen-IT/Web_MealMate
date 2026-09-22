@@ -158,7 +158,7 @@ if ($used['protein'] > 0 && $used['protein'] < $targets['protein'] * .7) $insigh
 if ($healthReady && $health['water_ml'] > 0 && $health['water_ml'] < $targets['water'] * .7) $insights[] = ['bi-droplet', 'Nước uống còn thấp', 'Còn ' . max(0, $targets['water'] - $health['water_ml']) . ' ml để đạt mục tiêu.'];
 $insights = array_slice($insights, 0, 5);
 
-$page_title = 'Dashboard sức khỏe';
+$page_title = 'Dashboard dinh dưỡng';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 <style>
@@ -505,7 +505,7 @@ require_once __DIR__ . '/../includes/header.php';
             </span>
           </div>
           <p class="text-muted mb-0 mt-1 small">
-            <i class="bi bi-clock-history me-1 text-success"></i>Dữ liệu sức khỏe cập nhật đến <strong><?php echo date('H:i'); ?></strong> &bull; Chúc bạn một ngày tràn đầy năng lượng!
+            <i class="bi bi-clock-history me-1 text-success"></i>Dữ liệu dinh dưỡng cập nhật đến <strong><?php echo date('H:i'); ?></strong> &bull; Chúc bạn một ngày tràn đầy năng lượng!
           </p>
         </div>
       </div>
@@ -543,7 +543,7 @@ require_once __DIR__ . '/../includes/header.php';
         <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
       </div>
       <div>
-        <div class="fw-bold text-dark">Chưa hoàn thiện hồ sơ sức khỏe!</div>
+        <div class="fw-bold text-dark">Chưa hoàn thiện hồ sơ cá nhân!</div>
         <div class="small text-muted">Cập nhật chiều cao, cân nặng và mục tiêu để tính chính xác BMR, TDEE và lộ trình calo.</div>
       </div>
     </div>

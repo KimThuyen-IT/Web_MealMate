@@ -207,7 +207,7 @@ try {
         'fat' => $fat,
         'fiber' => $fiber,
         'serving' => ($winner['serving_size'] ? floatval($winner['serving_size']) : '1') . ' ' . ($winner['serving_unit'] ?? 'phần'),
-        'description' => $winner['description'] ?? 'Món ăn dinh dưỡng được AI chọn lọc dựa trên thói quen và mục tiêu sức khỏe của bạn.',
+        'description' => $winner['description'] ?? 'Món ăn dinh dưỡng được AI chọn lọc dựa trên thói quen và mục tiêu cá nhân của bạn.',
         'ai_reasoning' => $aiReasoning,
         'detail_url' => BASE_URL . '/food-detail.php?id=' . $winner['id']
     ];

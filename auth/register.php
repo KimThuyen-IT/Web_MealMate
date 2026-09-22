@@ -82,7 +82,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <div class="position-absolute" style="bottom: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.15); border-radius: 50%; filter: blur(15px);"></div>
                             <div class="position-relative z-index-1">
                                 <h3 class="fw-bold mb-3">Tham gia cộng đồng!</h3>
-                                <p class="small opacity-75">Bắt đầu hành trình chăm sóc sức khỏe của bạn ngay hôm nay cùng hệ thống quản lý dinh dưỡng chuyên nghiệp.</p>
+                                <p class="small opacity-75">Bắt đầu hành trình quản lý dinh dưỡng của bạn ngay hôm nay cùng hệ thống chuyên nghiệp.</p>
                                 <ul class="list-unstyled mt-4 small opacity-75">
                                     <li class="mb-2"><i class="bi bi-check-circle-fill me-2 text-warning"></i>Ghi chép bữa ăn dễ dàng</li>
                                     <li class="mb-2"><i class="bi bi-check-circle-fill me-2 text-warning"></i>Tự động tính Calories</li>
@@ -123,7 +123,7 @@ require_once __DIR__ . '/../includes/header.php';
                                         <div class="form-floating position-relative">
                                             <input type="password" class="form-control pe-5 <?php echo isset($field_errors['password']) ? 'is-invalid' : ''; ?>" id="floatingPassword" name="password" placeholder="Mật khẩu" required minlength="8">
                                             <label for="floatingPassword" class="text-muted"><i class="bi bi-lock me-2"></i>Mật khẩu</label>
-                                            <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPassword" aria-label="Hiện mật khẩu" aria-pressed="false">
+                                            <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPassword" aria-label="Hiện mật khẩu" aria-pressed="false" style="display: none;">
                                                 <i class="bi bi-eye" aria-hidden="true"></i>
                                             </button>
                                             <div class="invalid-feedback" id="passwordError"><?php echo $field_errors['password'] ?? 'Mật khẩu phải có ít nhất 8 ký tự.'; ?></div>
@@ -133,7 +133,7 @@ require_once __DIR__ . '/../includes/header.php';
                                         <div class="form-floating position-relative">
                                             <input type="password" class="form-control pe-5 <?php echo isset($field_errors['password_confirm']) ? 'is-invalid' : ''; ?>" id="floatingPasswordConfirm" name="password_confirm" placeholder="Nhập lại" required minlength="8">
                                             <label for="floatingPasswordConfirm" class="text-muted"><i class="bi bi-check-circle me-2"></i>Nhập lại mật khẩu</label>
-                                            <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPasswordConfirm" aria-label="Hiện mật khẩu xác nhận" aria-pressed="false">
+                                            <button type="button" class="btn btn-link text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-2 password-toggle" data-password-toggle="floatingPasswordConfirm" aria-label="Hiện mật khẩu xác nhận" aria-pressed="false" style="display: none;">
                                                 <i class="bi bi-eye" aria-hidden="true"></i>
                                             </button>
                                             <div class="invalid-feedback" id="passwordConfirmError"><?php echo $field_errors['password_confirm'] ?? 'Mật khẩu xác nhận không khớp.'; ?></div>
