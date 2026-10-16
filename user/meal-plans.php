@@ -148,7 +148,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                                 <input type="hidden" name="action" value="toggle_favorite">
                                 <input type="hidden" name="plan_id" value="<?php echo $plan['id']; ?>">
-                                <button type="submit" class="btn btn-light rounded-circle shadow-sm text-danger d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <button type="submit" class="btn btn-light rounded-circle shadow-sm text-danger d-flex align-items-center justify-content-center p-0" style="width: 40px; height: 40px;">
                                     <i class="bi <?php echo $isFav ? 'bi-heart-fill' : 'bi-heart'; ?> fs-5"></i>
                                 </button>
                             </form>

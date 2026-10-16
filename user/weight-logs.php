@@ -493,19 +493,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php if ($total_pages > 1): ?>
                         <div class="d-flex justify-content-center py-3 border-top">
                             <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-sm mb-0">
-                                    <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                                        <a class="page-link rounded-start-pill" href="?page=<?php echo $page - 1; ?>">&laquo;</a>
-                                    </li>
-                                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                        <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                        </li>
-                                    <?php endfor; ?>
-                                    <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                                        <a class="page-link rounded-end-pill" href="?page=<?php echo $page + 1; ?>">&raquo;</a>
-                                    </li>
-                                </ul>
+                                <?php echo render_pagination_links($page, $total_pages, []); ?>
                             </nav>
                         </div>
                     <?php endif; ?>

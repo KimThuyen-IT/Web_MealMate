@@ -333,9 +333,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
 $limit = 10;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
-// Đếm tổng số người dùng (loại trừ sinh viên có class_id hoặc có mssv)
-$whereSql = "WHERE (class_id IS NULL OR class_id = 0) AND (mssv IS NULL OR mssv = '')";
-$stmtCount = $conn->query("SELECT COUNT(*) FROM users {$whereSql}");
+$searchFilter = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
+$roleFilter = isset($_GET['role']) && is_string($_GET['role']) && in_array($_GET['role'], ['user', 'admin'], true)
+    ? $_GET['role']
+    : '';
+$statusFilter = isset($_GET['status']) && is_string($_GET['status']) && in_array($_GET['status'], ['active', 'locked', 'inactive'], true)
+    ? $_GET['status']
+    : '';
+$registrationDateFilter = isset($_GET['registration_date']) && is_string($_GET['registration_date'])
+    ? trim($_GET['registration_date'])
+    : '';
+$parsedRegistrationDate = DateTime::createFromFormat('!Y-m-d', $registrationDateFilter);
+if (!$parsedRegistrationDate || $parsedRegistrationDate->format('Y-m-d') !== $registrationDateFilter) {
+    $registrationDateFilter = '';
+}
+
+$whereConditions = [
+    '(class_id IS NULL OR class_id = 0)',
+    "(mssv IS NULL OR mssv = '')"
+];
+$queryParams = [];
+
+if ($searchFilter !== '') {
+    $searchConditions = [
+        'CAST(id AS CHAR) LIKE :search_id',
+        'full_name LIKE :search_name',
+        'email LIKE :search_email'
+    ];
+    $searchPattern = '%' . $searchFilter . '%';
+    $queryParams[':search_id'] = $searchPattern;
+    $queryParams[':search_name'] = $searchPattern;
+    $queryParams[':search_email'] = $searchPattern;
+
+    $whereConditions[] = '(' . implode(' OR ', $searchConditions) . ')';
+}
+if ($roleFilter !== '') {
+    $whereConditions[] = 'role = :role';
+    $queryParams[':role'] = $roleFilter;
+}
+if ($statusFilter !== '') {
+    $whereConditions[] = 'status = :status';
+    $queryParams[':status'] = $statusFilter;
+}
+if ($registrationDateFilter !== '') {
+    $whereConditions[] = 'DATE(created_at) = :registration_date';
+    $queryParams[':registration_date'] = $registrationDateFilter;
+}
+
+$whereSql = 'WHERE ' . implode(' AND ', $whereConditions);
+$stmtCount = $conn->prepare("SELECT COUNT(*) FROM users {$whereSql}");
+$stmtCount->execute($queryParams);
 $total_users = (int)$stmtCount->fetchColumn();
 $total_pages = max(1, (int)ceil($total_users / $limit));
 
@@ -352,10 +399,23 @@ $stmt = $conn->prepare("
     ORDER BY id DESC
     LIMIT :limit OFFSET :offset
 ");
+foreach ($queryParams as $name => $value) {
+    $stmt->bindValue($name, $value, PDO::PARAM_STR);
+}
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$paginationParams = [
+    'search' => $searchFilter,
+    'role' => $roleFilter,
+    'status' => $statusFilter,
+    'registration_date' => $registrationDateFilter
+];
+$paginationParams = array_filter($paginationParams, static function ($value) {
+    return $value !== '';
+});
 
 $page_title = 'Quản lý Người dùng';
 require_once __DIR__ . '/../includes/header.php';
@@ -386,6 +446,44 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <?php display_flash_message(); ?>
+
+            <form method="GET" action="<?php echo BASE_URL; ?>/admin/users.php" class="card glass-card border-0 rounded-4 shadow-sm mb-4" data-live-search="reload">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-lg-4">
+                            <label for="filter_search" class="form-label small fw-semibold">Tìm kiếm</label>
+                            <input type="search" class="form-control" id="filter_search" name="search" value="<?php echo htmlspecialchars($searchFilter, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nhập ID, họ tên hoặc email">
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label for="filter_role" class="form-label small fw-semibold">Vai trò</label>
+                            <select class="form-select" id="filter_role" name="role">
+                                <option value="">Tất cả vai trò</option>
+                                <option value="admin" <?php echo $roleFilter === 'admin' ? 'selected' : ''; ?>>Admin / Root Admin</option>
+                                <option value="user" <?php echo $roleFilter === 'user' ? 'selected' : ''; ?>>User</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label for="filter_status" class="form-label small fw-semibold">Quyền sử dụng</label>
+                            <select class="form-select" id="filter_status" name="status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Đang hoạt động</option>
+                                <option value="locked" <?php echo $statusFilter === 'locked' ? 'selected' : ''; ?>>Đã khóa</option>
+                                <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Tạm ngưng</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-2">
+                            <label for="filter_registration_date" class="form-label small fw-semibold">Ngày đăng ký</label>
+                            <input type="date" class="form-control" id="filter_registration_date" name="registration_date" value="<?php echo htmlspecialchars($registrationDateFilter, ENT_QUOTES, 'UTF-8'); ?>">
+                        </div>
+                        <div class="col-12 col-lg-2 d-flex justify-content-end gap-2">
+                            <a href="<?php echo BASE_URL; ?>/admin/users.php" class="btn btn-outline-secondary rounded-pill px-3">Xóa lọc</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-search me-1"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
             
             <form id="bulkDeleteForm" method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
@@ -414,7 +512,7 @@ require_once __DIR__ . '/../includes/header.php';
                                         <tr>
                                             <td colspan="8" class="text-center py-4 text-muted">
                                                 <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
-                                                Chưa có người dùng nào.
+                                                <?php echo $searchFilter !== '' || $roleFilter !== '' || $statusFilter !== '' || $registrationDateFilter !== '' ? 'Không tìm thấy người dùng phù hợp.' : 'Chưa có người dùng nào.'; ?>
                                             </td>
                                         </tr>
                                     <?php else: ?>
@@ -560,19 +658,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     Hiển thị <?php echo min(($page - 1) * $limit + 1, $total_users); ?> - <?php echo min($page * $limit, $total_users); ?> trên tổng số <?php echo $total_users; ?> người dùng
                                 </div>
                                 <nav aria-label="Page navigation">
-                                    <ul class="pagination pagination-sm mb-0">
-                                        <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">Trước</a>
-                                        </li>
-                                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                            <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                            </li>
-                                        <?php endfor; ?>
-                                        <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">Tiếp</a>
-                                        </li>
-                                    </ul>
+                                    <?php echo render_pagination_links($page, $total_pages, $paginationParams); ?>
                                 </nav>
                             </div>
                         </div>

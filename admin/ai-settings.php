@@ -6,6 +6,19 @@ require_once __DIR__ . '/../includes/functions.php';
 
 $database = new Database();
 $conn = $database->getConnection();
+
+$stmtCurrentUser = $conn->prepare("SELECT email FROM users WHERE id = :id LIMIT 1");
+$stmtCurrentUser->execute([':id' => $_SESSION['user_id']]);
+$current_user_email = (string)$stmtCurrentUser->fetchColumn();
+if (!defined('ROOT_ADMIN_EMAIL') || strtolower(trim($current_user_email)) !== strtolower(trim(ROOT_ADMIN_EMAIL))) {
+    $_SESSION['flash_message'] = [
+        'type' => 'danger',
+        'message' => 'Chỉ Root Admin mới có quyền cấu hình API Key AI.'
+    ];
+    header("Location: " . BASE_URL . "/admin/index.php");
+    exit();
+}
+
 $csrf_token = generate_csrf_token();
 
 // Đảm bảo bảng system_settings đã tồn tại

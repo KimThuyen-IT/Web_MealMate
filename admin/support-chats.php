@@ -13,8 +13,19 @@ $conn = $db->getConnection();
 $target_user_id = filter_input(INPUT_GET, 'user_id', FILTER_VALIDATE_INT);
 $target_user = null;
 if ($target_user_id) {
-    // Đánh dấu tin nhắn của user này là đã đọc NGAY LẬP TỨC trước khi header.php chạy
-    try {
+    $stmt = $conn->prepare("SELECT full_name, email FROM users WHERE id = :id");
+    $stmt->execute([':id' => $target_user_id]);
+    $target_user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($target_user) {
+        $stmtChat = $conn->prepare("SELECT id FROM support_chats WHERE user_id = :user_id LIMIT 1");
+        $stmtChat->execute([':user_id' => $target_user_id]);
+        if (!$stmtChat->fetch(PDO::FETCH_ASSOC)) {
+            $stmtCreateChat = $conn->prepare("INSERT INTO support_chats (user_id) VALUES (:user_id)");
+            $stmtCreateChat->execute([':user_id' => $target_user_id]);
+        }
+
+        // Đánh dấu tin nhắn của người dùng và thông báo liên quan là đã đọc.
         $stmtMarkRead = $conn->prepare("
             UPDATE support_messages sm
             JOIN support_chats sc ON sm.chat_id = sc.id
@@ -23,21 +34,18 @@ if ($target_user_id) {
         ");
         $stmtMarkRead->execute([':uid' => $target_user_id]);
 
-        // Đánh dấu đã đọc các thông báo chuông liên quan đến user này
         $stmtNotifRead = $conn->prepare("
-            UPDATE notifications 
-            SET is_read = 1 
+            UPDATE notifications
+            SET is_read = 1
             WHERE user_id = :admin_id AND message LIKE :pattern AND is_read = 0
         ");
         $stmtNotifRead->execute([
             ':admin_id' => $_SESSION['user_id'],
             ':pattern' => '%[UID:' . $target_user_id . ']%'
         ]);
-    } catch (Exception $e) {}
-
-    $stmt = $conn->prepare("SELECT full_name, email FROM users WHERE id = :id");
-    $stmt->execute([':id' => $target_user_id]);
-    $target_user = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $target_user_id = null;
+    }
 }
 
 $page_title = 'Hỗ trợ trực tuyến';
@@ -80,10 +88,14 @@ function getInitials($name) {
                     <div class="px-3 py-3 border-bottom" style="background: #f8f9fa;">
                         <h6 class="mb-0 fw-bold text-uppercase text-dark" style="letter-spacing: 0.5px; font-size: 0.85rem;">Danh sách hội thoại</h6>
                         <small class="text-muted" style="font-size: 0.75rem;">Quản lý tin nhắn khách hàng</small>
+                        <input type="search" id="support-chat-search" class="form-control form-control-sm mt-2" placeholder="Tìm theo tên hoặc email..." aria-label="Tìm theo tên hoặc email">
                     </div>
 
                     <!-- Chat List -->
-                    <div class="flex-grow-1 overflow-auto" id="admin-chat-list">
+                    <div class="flex-grow-1 overflow-auto" id="admin-chat-list" data-lenis-prevent>
+                        <div id="support-chat-search-empty" class="text-center py-4 px-3 text-muted small d-none">
+                            Không tìm thấy hội thoại phù hợp.
+                        </div>
                         <?php if (empty($chats)): ?>
                             <div class="text-center py-5 text-muted small">
                                 <i class="bi bi-chat-dots d-block mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
@@ -137,7 +149,7 @@ function getInitials($name) {
                         </div>
 
                         <!-- Chat Messages -->
-                        <div class="flex-grow-1 overflow-auto p-4" id="support-chat-box">
+                        <div class="flex-grow-1 overflow-auto p-4" id="support-chat-box" data-lenis-prevent>
                             <div class="text-center text-muted py-3" id="support-loading">
                                 <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
                                 Đang tải tin nhắn...
@@ -174,6 +186,12 @@ function getInitials($name) {
 </div>
 
 <style>
+#admin-chat-list,
+#support-chat-box {
+    min-height: 0;
+    overscroll-behavior: contain;
+}
+
 /* Chat list item hover */
 .chat-list-item { transition: background 0.15s; }
 .chat-list-item:hover:not(.active) { background: #f8f9fa !important; }
@@ -214,12 +232,21 @@ function getInitials($name) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // BUG-03: Realtime cập nhật danh sách hội thoại bên trái
+    const supportChatSearch = document.getElementById('support-chat-search');
+    const searchEmptyNotice = document.getElementById('support-chat-search-empty');
+    let chatSearchTimer;
+
     function fetchChatList() {
-        fetch('<?php echo BASE_URL; ?>/api/support_get_chats.php')
+        const search = supportChatSearch ? supportChatSearch.value.trim() : '';
+        const chatsUrl = new URL('<?php echo BASE_URL; ?>/api/support_get_chats.php', window.location.origin);
+        if (search) chatsUrl.searchParams.set('search', search);
+
+        fetch(chatsUrl)
             .then(res => res.json())
             .then(data => {
                 if (data.success && Array.isArray(data.chats)) {
                     const chatListContainer = document.getElementById('admin-chat-list');
+                    const matchingUserIds = new Set(data.chats.map(chat => String(chat.user_id)));
                     data.chats.forEach(chat => {
                         let item = document.getElementById('chat-user-' + chat.user_id);
                         const isCurrent = (typeof targetUserId !== 'undefined' && targetUserId == chat.user_id);
@@ -300,9 +327,23 @@ document.addEventListener('DOMContentLoaded', function() {
                             chatListContainer.prepend(newA);
                         }
                     });
+
+                    chatListContainer.querySelectorAll('.chat-list-item').forEach(item => {
+                        item.classList.toggle('d-none', !matchingUserIds.has(item.dataset.userId));
+                    });
+                    if (searchEmptyNotice) {
+                        searchEmptyNotice.classList.toggle('d-none', matchingUserIds.size > 0 || search === '');
+                    }
                 }
             })
             .catch(err => console.error(err));
+    }
+
+    if (supportChatSearch) {
+        supportChatSearch.addEventListener('input', function() {
+            window.clearTimeout(chatSearchTimer);
+            chatSearchTimer = window.setTimeout(fetchChatList, 250);
+        });
     }
 
     // Polling danh sách hội thoại mỗi 3 giây

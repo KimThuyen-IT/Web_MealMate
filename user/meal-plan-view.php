@@ -65,7 +65,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
                         <input type="hidden" name="action" value="toggle_favorite">
                         <input type="hidden" name="plan_id" value="<?php echo $plan['id']; ?>">
-                        <button type="submit" class="btn <?php echo $isFav ? 'btn-danger' : 'btn-outline-danger'; ?> rounded-circle" style="width: 45px; height: 45px;" title="<?php echo $isFav ? 'Bỏ yêu thích' : 'Yêu thích'; ?>">
+                        <button type="submit" class="btn <?php echo $isFav ? 'btn-danger' : 'btn-outline-danger'; ?> rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width: 45px; height: 45px;" title="<?php echo $isFav ? 'Bỏ yêu thích' : 'Yêu thích'; ?>">
                             <i class="bi <?php echo $isFav ? 'bi-heart-fill' : 'bi-heart'; ?>"></i>
                         </button>
                     </form>

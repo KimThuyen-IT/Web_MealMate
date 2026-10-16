@@ -7,6 +7,9 @@ require_once __DIR__ . '/../includes/functions.php';
 $database = new Database();
 $conn = $database->getConnection();
 $csrf_token = generate_csrf_token();
+$is_root_admin = isset($_SESSION['user_email'])
+    && defined('ROOT_ADMIN_EMAIL')
+    && strtolower(trim($_SESSION['user_email'])) === strtolower(trim(ROOT_ADMIN_EMAIL));
 
 $page = max(1, (int)($_GET['page'] ?? 1));
 $limit = 10;
@@ -62,9 +65,11 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="col-md-9 col-lg-10">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h2 class="fw-bold mb-0">Quản lý Lịch sử Chatbot AI</h2>
-                <a href="<?php echo BASE_URL; ?>/admin/ai-settings.php" class="btn btn-success rounded-pill px-3 fw-bold shadow-sm">
-                    <i class="bi bi-key-fill me-1"></i> Cấu hình API Key AI
-                </a>
+                <?php if ($is_root_admin): ?>
+                    <a href="<?php echo BASE_URL; ?>/admin/ai-settings.php" class="btn btn-success rounded-pill px-3 fw-bold shadow-sm">
+                        <i class="bi bi-key-fill me-1"></i> Cấu hình API Key AI
+                    </a>
+                <?php endif; ?>
             </div>
 
             <?php if (isset($_SESSION['success'])): ?>
@@ -130,19 +135,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <?php if ($total_pages > 1): ?>
                 <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">Trước</a>
-                        </li>
-                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                            </li>
-                        <?php endfor; ?>
-                        <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">Tiếp</a>
-                        </li>
-                    </ul>
+                    <?php echo render_pagination_links($page, $total_pages, []); ?>
                 </nav>
             <?php endif; ?>
         </div>

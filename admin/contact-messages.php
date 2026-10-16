@@ -7,6 +7,49 @@ require_once __DIR__ . '/../includes/functions.php';
 $database = new Database();
 $conn = $database->getConnection();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Yêu cầu không hợp lệ.';
+    } else {
+        $selectedIds = $_POST['message_ids'] ?? [];
+        $cleanIds = [];
+        if (is_array($selectedIds)) {
+            foreach ($selectedIds as $selectedId) {
+                $id = filter_var($selectedId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($id !== false) {
+                    $cleanIds[] = (int)$id;
+                }
+            }
+        }
+        $cleanIds = array_values(array_unique($cleanIds));
+
+        if (!$cleanIds) {
+            $_SESSION['error'] = 'Chọn ít nhất một tin nhắn để xóa.';
+        } else {
+            try {
+                $conn->beginTransaction();
+                $deleteMessage = $conn->prepare('DELETE FROM contact_messages WHERE id = :id');
+                $deleteNotifications = $conn->prepare('DELETE FROM notifications WHERE message LIKE :pattern');
+                $deletedCount = 0;
+                foreach ($cleanIds as $id) {
+                    $deleteNotifications->execute([':pattern' => '%[MID:' . $id . ']%']);
+                    $deleteMessage->execute([':id' => $id]);
+                    $deletedCount += $deleteMessage->rowCount();
+                }
+                $conn->commit();
+                $_SESSION['success'] = "Đã xóa {$deletedCount} tin nhắn liên hệ.";
+            } catch (Throwable $e) {
+                if ($conn->inTransaction()) {
+                    $conn->rollBack();
+                }
+                error_log('Không thể xóa hàng loạt tin nhắn liên hệ: ' . $e->getMessage());
+                $_SESSION['error'] = 'Không thể xóa các tin nhắn đã chọn. Vui lòng thử lại.';
+            }
+        }
+    }
+    redirect('/admin/contact-messages.php');
+}
+
 // Xử lý cập nhật trạng thái hoặc xóa
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -39,11 +82,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     redirect('/admin/contact-messages.php');
 }
 
-// Lấy danh sách tin nhắn
-$query = "SELECT * FROM contact_messages ORDER BY created_at DESC";
+// Lấy danh sách tin nhắn theo trang
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = 10;
+$searchFilter = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
+$statusFilter = isset($_GET['status']) && is_string($_GET['status']) && in_array($_GET['status'], ['new', 'read', 'replied'], true)
+    ? $_GET['status']
+    : '';
+$searchConditions = [];
+$searchParams = [];
+if ($searchFilter !== '') {
+    $searchConditions[] = "(CAST(id AS CHAR) LIKE :search_id
+        OR full_name LIKE :search_name
+        OR email LIKE :search_email
+        OR subject LIKE :search_subject
+        OR message LIKE :search_message)";
+    $searchPattern = '%' . $searchFilter . '%';
+    $searchParams = [
+        ':search_id' => $searchPattern,
+        ':search_name' => $searchPattern,
+        ':search_email' => $searchPattern,
+        ':search_subject' => $searchPattern,
+        ':search_message' => $searchPattern
+    ];
+}
+if ($statusFilter !== '') {
+    $searchConditions[] = 'status = :status';
+    $searchParams[':status'] = $statusFilter;
+}
+$searchWhere = $searchConditions ? 'WHERE ' . implode(' AND ', $searchConditions) : '';
+$offset = ($page - 1) * $limit;
+
+$countStmt = $conn->prepare("SELECT COUNT(*) FROM contact_messages {$searchWhere}");
+$countStmt->execute($searchParams);
+$total_messages = (int)$countStmt->fetchColumn();
+$total_pages = $total_messages > 0 ? (int)ceil($total_messages / $limit) : 1;
+
+if ($page > $total_pages) {
+    $page = $total_pages;
+    $offset = ($page - 1) * $limit;
+}
+
+$query = "SELECT * FROM contact_messages {$searchWhere} ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
 $stmt = $conn->prepare($query);
+foreach ($searchParams as $name => $value) {
+    $stmt->bindValue($name, $value, PDO::PARAM_STR);
+}
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$paginationParams = [];
+if ($searchFilter !== '') {
+    $paginationParams['search'] = $searchFilter;
+}
+if ($statusFilter !== '') {
+    $paginationParams['status'] = $statusFilter;
+}
 
 $page_title = 'Quản lý Liên hệ';
 require_once __DIR__ . '/../includes/header.php';
@@ -55,7 +150,12 @@ require_once __DIR__ . '/../includes/header.php';
             <?php require __DIR__ . '/includes/sidebar.php'; ?>
         </div>
         <div class="col-md-10">
-            <h3 class="fw-bold mb-4">Hộp thư Liên hệ</h3>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                <h3 class="fw-bold mb-0">Hộp thư Liên hệ</h3>
+                <button type="submit" form="bulkContactDeleteForm" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap" disabled>
+                    <i class="bi bi-trash me-1"></i>Xóa đã chọn (<span data-bulk-count>0</span>)
+                </button>
+            </div>
 
             <?php if (isset($_SESSION['success'])): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -63,6 +163,43 @@ require_once __DIR__ . '/../includes/header.php';
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?php echo htmlspecialchars($_SESSION['error'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" id="bulkContactDeleteForm" data-bulk-delete="contact-messages">
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                <input type="hidden" name="action" value="bulk_delete">
+            </form>
+
+            <form method="GET" action="<?php echo BASE_URL; ?>/admin/contact-messages.php" class="card glass-card border-0 rounded-4 shadow-sm mb-4" data-live-search="reload">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-lg-6">
+                            <label for="filter_contact_search" class="form-label small fw-semibold">Tìm kiếm tin nhắn</label>
+                            <input type="search" class="form-control" id="filter_contact_search" name="search" value="<?php echo htmlspecialchars($searchFilter, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nhập ID, người gửi, email, chủ đề hoặc nội dung">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label for="filter_contact_status" class="form-label small fw-semibold">Trạng thái</label>
+                            <select class="form-select" id="filter_contact_status" name="status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="new" <?php echo $statusFilter === 'new' ? 'selected' : ''; ?>>Chưa đọc</option>
+                                <option value="read" <?php echo $statusFilter === 'read' ? 'selected' : ''; ?>>Đã đọc</option>
+                                <option value="replied" <?php echo $statusFilter === 'replied' ? 'selected' : ''; ?>>Đã xử lý</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex justify-content-end gap-2">
+                            <a href="<?php echo BASE_URL; ?>/admin/contact-messages.php" class="btn btn-outline-secondary rounded-pill px-3">Xóa lọc</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-search me-1"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
             <div class="card glass-card border-0 rounded-4 shadow-sm overflow-hidden mb-4">
                 <div class="card-body p-0">
@@ -70,6 +207,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead style="background: rgba(243, 244, 246, 0.7);">
                                 <tr>
+                                    <th><input type="checkbox" class="form-check-input" data-bulk-select-all="contact-messages" aria-label="Chọn tất cả tin nhắn"></th>
                                     <th>Thời gian</th>
                                     <th>Người gửi</th>
                                     <th>Email</th>
@@ -81,6 +219,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <tbody>
                                 <?php foreach ($messages as $msg): ?>
                                 <tr id="contact-row-<?php echo $msg['id']; ?>" class="<?php echo $msg['status'] === 'new' ? 'table-warning' : ''; ?>">
+                                    <td><input type="checkbox" class="form-check-input" name="message_ids[]" value="<?php echo (int)$msg['id']; ?>" form="bulkContactDeleteForm" data-bulk-select="contact-messages" aria-label="Chọn tin nhắn #<?php echo (int)$msg['id']; ?>"></td>
                                     <td><?php echo date('d/m/Y H:i', strtotime($msg['created_at'])); ?></td>
                                     <td class="fw-bold"><?php echo htmlspecialchars($msg['full_name']); ?></td>
                                     <td><a href="mailto:<?php echo htmlspecialchars($msg['email']); ?>"><?php echo htmlspecialchars($msg['email']); ?></a></td>
@@ -111,7 +250,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 <?php endforeach; ?>
                                 <?php if (empty($messages)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">Không có tin nhắn liên hệ nào.</td>
+                                    <td colspan="7" class="text-center py-4 text-muted"><?php echo $searchFilter !== '' || $statusFilter !== '' ? 'Không tìm thấy tin nhắn phù hợp.' : 'Không có tin nhắn liên hệ nào.'; ?></td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -119,6 +258,12 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                 </div>
             </div>
+
+            <?php if ($total_pages > 1): ?>
+                <nav aria-label="Phân trang hộp thư liên hệ" class="mt-3">
+                    <?php echo render_pagination_links($page, $total_pages, $paginationParams); ?>
+                </nav>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -132,10 +277,11 @@ require_once __DIR__ . '/../includes/header.php';
                 <input type="hidden" name="action" value="update_status">
                 <input type="hidden" name="id" id="msg_modal_id" value="0">
 
-                <div class="modal-header border-0 pb-0 bg-health text-white p-4">
-                    <h5 class="modal-title fw-bold" id="contactMsgModalLabel">
-                        <i class="bi bi-envelope-open-fill me-2"></i>Chi Tiết Tin Nhắn Liên Hệ
-                    </h5>
+                <div class="modal-header border-0 bg-health text-white p-4 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-envelope-open-fill fs-5"></i>
+                        <h5 class="modal-title fw-bold mb-0" id="contactMsgModalLabel">Chi Tiết Tin Nhắn Liên Hệ</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">

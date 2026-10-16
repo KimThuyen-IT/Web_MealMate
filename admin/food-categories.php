@@ -175,6 +175,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     redirect('/admin/food-categories.php');
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete_categories') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Yêu cầu không hợp lệ.';
+    } else {
+        $selectedIds = $_POST['category_ids'] ?? [];
+        $cleanIds = [];
+        if (is_array($selectedIds)) {
+            foreach ($selectedIds as $selectedId) {
+                $id = filter_var($selectedId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($id !== false) {
+                    $cleanIds[] = (int)$id;
+                }
+            }
+        }
+        $cleanIds = array_values(array_unique($cleanIds));
+
+        if (!$cleanIds) {
+            $_SESSION['error'] = 'Chọn ít nhất một danh mục để xóa.';
+        } else {
+            try {
+                $conn->beginTransaction();
+                $categoryStmt = $conn->prepare('SELECT id FROM food_categories WHERE id = :id FOR UPDATE');
+                $moveStmt = $conn->prepare('UPDATE foods SET category_id = NULL WHERE category_id = :id');
+                $deleteStmt = $conn->prepare('DELETE FROM food_categories WHERE id = :id');
+                $deletedCount = 0;
+                $movedFoods = 0;
+
+                foreach ($cleanIds as $id) {
+                    $categoryStmt->execute([':id' => $id]);
+                    if (!$categoryStmt->fetch(PDO::FETCH_ASSOC)) {
+                        continue;
+                    }
+                    $moveStmt->execute([':id' => $id]);
+                    $movedFoods += $moveStmt->rowCount();
+                    $deleteStmt->execute([':id' => $id]);
+                    $deletedCount += $deleteStmt->rowCount();
+                }
+                $conn->commit();
+                $_SESSION['success'] = "Đã xóa {$deletedCount} danh mục. {$movedFoods} món ăn đã được chuyển sang chưa phân loại.";
+            } catch (Throwable $e) {
+                if ($conn->inTransaction()) {
+                    $conn->rollBack();
+                }
+                error_log('Không thể xóa hàng loạt danh mục món ăn: ' . $e->getMessage());
+                $_SESSION['error'] = 'Không thể xóa các danh mục đã chọn. Vui lòng thử lại.';
+            }
+        }
+    }
+    redirect('/admin/food-categories.php');
+}
+
 // Xử lý xóa danh mục
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_category') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -227,19 +278,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Phân trang danh mục món ăn (BUG-18: 10 danh mục / trang)
 $limit = 10;
 $page = max(1, (int)($_GET['page'] ?? 1));
+$searchFilter = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
+$statusFilter = isset($_GET['status']) && is_string($_GET['status']) && in_array($_GET['status'], ['active', 'inactive'], true)
+    ? $_GET['status']
+    : '';
+$searchConditions = [];
+$searchParams = [];
+if ($searchFilter !== '') {
+    $searchConditions[] = "(CAST(c.id AS CHAR) LIKE :search_id
+        OR c.name LIKE :search_name
+        OR c.slug LIKE :search_slug
+        OR c.description LIKE :search_description)";
+    $searchPattern = '%' . $searchFilter . '%';
+    $searchParams = [
+        ':search_id' => $searchPattern,
+        ':search_name' => $searchPattern,
+        ':search_slug' => $searchPattern,
+        ':search_description' => $searchPattern
+    ];
+}
+if ($statusFilter !== '') {
+    $searchConditions[] = 'c.status = :status';
+    $searchParams[':status'] = $statusFilter;
+}
+$searchWhere = $searchConditions ? 'WHERE ' . implode(' AND ', $searchConditions) : '';
 $offset = ($page - 1) * $limit;
 
-$totalCategories = (int)$conn->query("SELECT COUNT(*) FROM food_categories")->fetchColumn();
+$countStmt = $conn->prepare("SELECT COUNT(*) FROM food_categories c {$searchWhere}");
+$countStmt->execute($searchParams);
+$totalCategories = (int)$countStmt->fetchColumn();
 $totalPages = ceil($totalCategories / $limit);
+if ($page > max(1, $totalPages)) {
+    $page = max(1, $totalPages);
+    $offset = ($page - 1) * $limit;
+}
 
 $query = "SELECT c.*, (SELECT COUNT(*) FROM foods WHERE category_id = c.id) as total_foods 
           FROM food_categories c 
+          {$searchWhere}
           ORDER BY c.id DESC LIMIT :limit OFFSET :offset";
 $stmt = $conn->prepare($query);
+foreach ($searchParams as $name => $value) {
+    $stmt->bindValue($name, $value, PDO::PARAM_STR);
+}
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$paginationParams = [];
+if ($searchFilter !== '') {
+    $paginationParams['search'] = $searchFilter;
+}
+if ($statusFilter !== '') {
+    $paginationParams['status'] = $statusFilter;
+}
 
 $page_title = 'Quản lý Danh mục Món ăn';
 require_once __DIR__ . '/../includes/header.php';
@@ -254,12 +346,16 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
                     <h3 class="fw-bold mb-0">Quản lý Danh mục Món ăn</h3>
-                    <p class="text-muted small mb-0">Tổng cộng: <?php echo $totalCategories; ?> danh mục (10 danh mục/trang)</p>
+                    <p class="text-muted small mb-0"><?php echo $searchFilter !== '' || $statusFilter !== '' ? 'Kết quả lọc: ' : 'Tổng cộng: '; ?><?php echo $totalCategories; ?> danh mục (10 danh mục/trang)</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="<?php echo BASE_URL; ?>/admin/food-categories.php?action=sample_excel" class="btn btn-sm btn-outline-secondary rounded-pill">
-                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Tải file mẫu Excel
-                    </a>
+                    <form method="POST" id="bulkCategoryDeleteForm" data-bulk-delete="categories" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                        <input type="hidden" name="action" value="bulk_delete_categories">
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" disabled>
+                            <i class="bi bi-trash me-1"></i>Xóa đã chọn (<span data-bulk-count>0</span>)
+                        </button>
+                    </form>
                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-bs-toggle="modal" data-bs-target="#importExcelModal">
                         <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập từ Excel
                     </button>
@@ -282,12 +378,38 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             <?php endif; ?>
 
+            <form method="GET" action="<?php echo BASE_URL; ?>/admin/food-categories.php" class="card glass-card border-0 rounded-4 shadow-sm mb-4" data-live-search="reload">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-lg-6">
+                            <label for="filter_category_search" class="form-label small fw-semibold">Tìm kiếm danh mục</label>
+                            <input type="search" class="form-control" id="filter_category_search" name="search" value="<?php echo htmlspecialchars($searchFilter, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nhập ID, tên danh mục, slug hoặc mô tả">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label for="filter_category_status" class="form-label small fw-semibold">Trạng thái</label>
+                            <select class="form-select" id="filter_category_status" name="status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Hoạt động</option>
+                                <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Tạm ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex justify-content-end gap-2">
+                            <a href="<?php echo BASE_URL; ?>/admin/food-categories.php" class="btn btn-outline-secondary rounded-pill px-3">Xóa lọc</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-search me-1"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
             <div class="card glass-card border-0 rounded-4 shadow-sm overflow-hidden mb-4">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead style="background: rgba(243, 244, 246, 0.7);">
                                 <tr>
+                                    <th class="ps-3"><input type="checkbox" class="form-check-input" data-bulk-select-all="categories" aria-label="Chọn tất cả danh mục"></th>
                                     <th class="ps-4">ID</th>
                                     <th>Tên danh mục</th>
                                     <th>Đường dẫn (Slug)</th>
@@ -299,6 +421,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <tbody>
                                 <?php foreach ($categories as $cat): ?>
                                 <tr>
+                                    <td class="ps-3"><input type="checkbox" class="form-check-input" name="category_ids[]" value="<?php echo (int)$cat['id']; ?>" form="bulkCategoryDeleteForm" data-bulk-select="categories" aria-label="Chọn danh mục <?php echo htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8'); ?>"></td>
                                     <td class="ps-4">#<?php echo $cat['id']; ?></td>
                                     <td class="fw-bold text-dark"><?php echo htmlspecialchars($cat['name']); ?></td>
                                     <td><code><?php echo htmlspecialchars($cat['slug']); ?></code></td>
@@ -329,9 +452,9 @@ require_once __DIR__ . '/../includes/header.php';
                                 <?php endforeach; ?>
                                 <?php if (empty($categories)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">
+                                    <td colspan="7" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                        Chưa có danh mục nào. Hãy thêm hoặc nhập từ file Excel!
+                                        <?php echo $searchFilter !== '' || $statusFilter !== '' ? 'Không tìm thấy danh mục phù hợp.' : 'Chưa có danh mục nào. Hãy thêm hoặc nhập từ file Excel!'; ?>
                                     </td>
                                 </tr>
                                 <?php endif; ?>
@@ -343,19 +466,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php if ($totalPages > 1): ?>
                     <div class="d-flex justify-content-center py-3 border-top">
                         <nav aria-label="Page navigation">
-                            <ul class="pagination pagination-sm mb-0">
-                                <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                                    <a class="page-link rounded-start-pill" href="?page=<?php echo $page - 1; ?>">&laquo;</a>
-                                </li>
-                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                    <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                    </li>
-                                <?php endfor; ?>
-                                <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
-                                    <a class="page-link rounded-end-pill" href="?page=<?php echo $page + 1; ?>">&raquo;</a>
-                                </li>
-                            </ul>
+                            <?php echo render_pagination_links($page, $totalPages, $paginationParams); ?>
                         </nav>
                     </div>
                     <?php endif; ?>

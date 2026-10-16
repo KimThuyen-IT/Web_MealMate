@@ -84,11 +84,4 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<div class="bg-light py-5 mt-4 text-center">
-    <div class="container">
-        <h2 class="fw-bold mb-4">Sẵn sàng bắt đầu hành trình của bạn?</h2>
-        <a href="<?php echo BASE_URL; ?>/auth/register.php" class="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow">Đăng ký hoàn toàn miễn phí</a>
-    </div>
-</div>
-
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

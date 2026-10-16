@@ -8,7 +8,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="container py-5">
     <div class="row align-items-center">
         <div class="col-md-6 mb-4">
-            <img src="https://images.unsplash.com/photo-1498837167922-41cfa6bd536f?auto=format&fit=crop&w=800&q=80" alt="Về chúng tôi" class="img-fluid rounded shadow">
+            <img src="<?php echo BASE_URL; ?>/img/GioiThieu.png" alt="Về chúng tôi" class="img-fluid rounded shadow">
         </div>
         <div class="col-md-6">
             <h1 class="fw-bold mb-4">Về <?php echo APP_NAME; ?></h1>

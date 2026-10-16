@@ -120,10 +120,6 @@ require_once __DIR__ . '/../includes/header.php';
                                 </div>
                                 
                                 <button type="submit" class="btn btn-success btn-glow w-100 mb-3 py-2 fw-bold text-uppercase rounded-pill shadow-sm">Đăng nhập</button>
-                                
-                                <div class="text-center mt-4">
-                                    <span class="text-muted small">Chưa có tài khoản?</span> <a href="<?php echo BASE_URL; ?>/auth/register.php" class="text-success text-decoration-none fw-bold">Đăng ký ngay</a>
-                                </div>
                             </form>
                         </div>
                     </div>

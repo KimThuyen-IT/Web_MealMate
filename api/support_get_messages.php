@@ -43,7 +43,7 @@ try {
     }
 
     $stmt = $conn->prepare("
-        SELECT id, sender_type, message, created_at 
+        SELECT id, sender_type, message, created_at
         FROM support_messages 
         WHERE chat_id = :chat_id AND id > :last_id 
         ORDER BY id ASC

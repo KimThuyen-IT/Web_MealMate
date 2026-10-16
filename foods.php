@@ -35,7 +35,7 @@ require_once __DIR__ . '/includes/header.php';
     <!-- Bộ lọc và tìm kiếm -->
     <div class="card shadow-sm mb-4 border-0">
         <div class="card-body">
-            <form method="GET" action="foods.php" class="row g-3">
+            <form method="GET" action="foods.php" class="row g-3" data-live-search="reload">
                 <div class="col-md-5">
                     <input type="text" name="search" class="form-control" placeholder="Tìm kiếm món ăn..." value="<?php echo htmlspecialchars($search); ?>">
                 </div>
@@ -99,19 +99,7 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Phân trang -->
         <?php if ($total_pages > 1): ?>
             <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&category=<?php echo $category_id; ?>">Trước</a>
-                    </li>
-                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&category=<?php echo $category_id; ?>"><?php echo $i; ?></a>
-                        </li>
-                    <?php endfor; ?>
-                    <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&category=<?php echo $category_id; ?>">Sau</a>
-                    </li>
-                </ul>
+                <?php echo render_pagination_links($page, $total_pages, ['search' => $search, 'category' => $category_id]); ?>
             </nav>
         <?php endif; ?>
     <?php endif; ?>

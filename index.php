@@ -18,7 +18,7 @@ require_once __DIR__ . '/includes/header.php';
                 <p class="lead mb-4 opacity-75">Theo dõi bữa ăn, tính toán lượng calories tự động và nhận lời khuyên từ Trợ lý AI thông minh để đạt được vóc dáng mơ ước của bạn.</p>
                 <div class="d-grid gap-3 d-md-flex justify-content-md-start">
                     <?php if (!isset($_SESSION['user_id'])): ?>
-                        <a href="<?php echo BASE_URL; ?>/auth/register.php" class="btn btn-light btn-lg px-4 me-md-2 text-success fw-bold shadow-soft" style="border-radius: 30px;">Bắt đầu miễn phí</a>
+                        <a href="<?php echo BASE_URL; ?>/auth/register.php" class="btn btn-light btn-lg px-4 me-md-2 text-success fw-bold shadow-soft d-none" style="border-radius: 30px;">Bắt đầu miễn phí</a>
                     <?php else: ?>
                         <a href="<?php echo BASE_URL; ?>/user/dashboard.php" class="btn btn-light btn-lg px-4 me-md-2 text-success fw-bold shadow-soft" style="border-radius: 30px;">Về Bảng điều khiển</a>
                     <?php endif; ?>
@@ -94,15 +94,5 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<?php if (!isset($_SESSION['user_id'])): ?>
-<!-- Call to Action -->
-<section class="py-5 position-relative bg-dark-gradient overflow-hidden">
-    <div class="container text-center py-5 position-relative z-index-1 animate-fade-in-up">
-        <h2 class="fw-bold mb-3 text-white">Sẵn sàng để thay đổi vóc dáng?</h2>
-        <p class="lead text-white-50 mb-5 mx-auto" style="max-width: 600px;">Tham gia cộng đồng của chúng tôi ngay hôm nay và trải nghiệm miễn phí toàn bộ công cụ dinh dưỡng cao cấp.</p>
-        <a href="<?php echo BASE_URL; ?>/auth/register.php" class="btn btn-success btn-glow btn-lg px-5 shadow-heavy fw-bold" style="border-radius: 30px;">Tạo tài khoản Miễn phí</a>
-    </div>
-</section>
-<?php endif; ?>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

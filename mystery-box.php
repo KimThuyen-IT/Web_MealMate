@@ -915,17 +915,17 @@ body {
                         </div>
 
                         <!-- Chọn bữa ăn để thêm vào nhật ký -->
-                        <div class="d-flex align-items-center justify-content-between p-2 px-3 rounded-4 bg-light border mb-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-2 px-3 rounded-4 bg-light border mb-3">
                             <label for="modalMealSelect" class="small fw-bold text-dark mb-0 d-flex align-items-center">
                                 <i class="bi bi-clock-history text-success me-2 fs-6"></i> Thêm vào bữa ăn:
                             </label>
-                            <select id="modalMealSelect" class="form-select form-select-sm w-auto rounded-pill border-success-subtle fw-semibold text-dark shadow-sm">
-                                <option value="breakfast">🌅 Bữa sáng</option>
-                                <option value="morning_snack">☕ Bữa phụ sáng</option>
-                                <option value="lunch">☀️ Bữa trưa</option>
-                                <option value="afternoon_snack">🍵 Bữa phụ chiều</option>
-                                <option value="dinner">🌙 Bữa tối</option>
-                                <option value="evening_snack">🥛 Bữa phụ tối</option>
+                            <select id="modalMealSelect" class="form-select form-select-sm w-auto rounded-pill border-success-subtle fw-semibold text-dark shadow-sm" style="min-width: 170px;">
+                                <option value="breakfast">Bữa sáng</option>
+                                <option value="morning_snack">Bữa phụ sáng</option>
+                                <option value="lunch">Bữa trưa</option>
+                                <option value="afternoon_snack">Bữa phụ chiều</option>
+                                <option value="dinner">Bữa tối</option>
+                                <option value="evening_snack">Bữa phụ tối</option>
                             </select>
                         </div>
 

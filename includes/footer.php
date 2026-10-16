@@ -3,46 +3,68 @@
 
 <!-- Footer Public -->
 <?php if (!isset($hide_footer) || !$hide_footer): ?>
-<footer class="bg-white pt-5 pb-4 mt-5 border-top">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 mb-4">
-                <a href="<?php echo BASE_URL; ?>" class="d-inline-block mb-3" aria-label="<?php echo htmlspecialchars(APP_NAME); ?>">
-                    <img src="<?php echo BASE_URL; ?>/img/logo_cty.png" alt="<?php echo htmlspecialchars(APP_NAME); ?>" class="company-logo company-logo-footer" style="max-height: 72px; max-width: 240px; width: auto; object-fit: contain;">
+<footer class="mt-5 border-top" style="background-color: #f1f3f5; color: #344054;">
+    <div class="container py-5">
+        <div class="row g-4">
+            <div class="col-md-6 col-xl-3">
+                <a href="<?php echo BASE_URL; ?>/" class="d-inline-block mb-3" aria-label="<?php echo htmlspecialchars(APP_NAME); ?>">
+                    <img src="<?php echo BASE_URL; ?>/img/logo_cty.png" alt="<?php echo htmlspecialchars(APP_NAME); ?>" class="company-logo company-logo-footer" style="max-height: 48px; max-width: 180px; width: auto; object-fit: contain;">
                 </a>
-                <p class="text-muted">Hệ thống quản lý bữa ăn, theo dõi dinh dưỡng cá nhân thông minh với trợ lý AI.</p>
-                <div class="mt-4">
-                    <a href="#" class="text-secondary me-3 fs-5"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="text-secondary me-3 fs-5"><i class="bi bi-twitter"></i></a>
-                    <a href="#" class="text-secondary me-3 fs-5"><i class="bi bi-instagram"></i></a>
+                <p class="mb-4">MealMate giúp bạn quản lý bữa ăn, theo dõi dinh dưỡng và xây dựng thói quen sống khỏe cùng trợ lý AI.</p>
+                <div class="d-flex gap-2">
+                    <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" class="d-inline-flex align-items-center justify-content-center rounded-circle border text-danger text-decoration-none" style="width: 44px; height: 44px;" aria-label="YouTube">
+                        <i class="bi bi-youtube fs-5"></i>
+                    </a>
+                    <a href="mailto:support@mealmanager.com" class="d-inline-flex align-items-center justify-content-center rounded-circle border text-primary text-decoration-none" style="width: 44px; height: 44px;" aria-label="Gửi email">
+                        <i class="bi bi-envelope-fill fs-5"></i>
+                    </a>
                 </div>
             </div>
-            <div class="col-lg-2 col-md-4 mb-4">
-                <h6 class="fw-bold mb-3">Liên kết</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><a href="<?php echo BASE_URL; ?>/index.php" class="text-decoration-none text-muted">Trang chủ</a></li>
-                    <li class="mb-2"><a href="<?php echo BASE_URL; ?>/features.php" class="text-decoration-none text-muted">Tính năng</a></li>
 
-                    <li class="mb-2"><a href="<?php echo BASE_URL; ?>/about.php" class="text-decoration-none text-muted">Giới thiệu</a></li>
+            <div class="col-md-6 col-xl-2">
+                <h6 class="fw-bold mb-3">Liên kết nhanh</h6>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3"><a href="<?php echo BASE_URL; ?>/index.php" class="text-decoration-none text-muted">Trang chủ</a></li>
+                    <li class="mb-3"><a href="<?php echo BASE_URL; ?>/contact.php" class="text-decoration-none text-muted">Liên hệ</a></li>
+                    <li><a href="<?php echo BASE_URL; ?>/about.php" class="text-decoration-none text-muted">Về chúng tôi</a></li>
                 </ul>
             </div>
-            <div class="col-lg-3 col-md-4 mb-4">
-                <h6 class="fw-bold mb-3">Hỗ trợ</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><a href="<?php echo BASE_URL; ?>/contact.php" class="text-decoration-none text-muted">Liên hệ</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Điều khoản sử dụng</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Chính sách bảo mật</a></li>
-                    <li class="mb-2"><a href="#" class="text-decoration-none text-muted">Disclaimer dinh dưỡng</a></li>
+
+            <div class="col-md-6 col-xl-3">
+                <h6 class="fw-bold mb-3">Liên hệ</h6>
+                <ul class="list-unstyled mb-0">
+                    <li class="d-flex align-items-start gap-3 mb-3">
+                        <i class="bi bi-geo-alt text-primary" style="width: 1rem; text-align: center;"></i>
+                        <span>CÔNG TY TNHH PLT SOLUTIONS</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-3 mb-3">
+                        <i class="bi bi-telephone text-primary" style="width: 1rem; text-align: center;"></i>
+                        <a href="tel:+84917208678" class="text-decoration-none text-muted">+84917208678</a>
+                    </li>
+                    <li class="d-flex align-items-start gap-3 mb-3">
+                        <i class="bi bi-envelope text-primary" style="width: 1rem; text-align: center;"></i>
+                        <a href="mailto:pltsolutions3010@gmail.com" class="text-decoration-none text-muted">pltsolutions3010@gmail.com</a>
+                    </li>
                 </ul>
+                <p class="small text-muted mb-0">Mon – Fri, 9:00 AM – 6:00 PM (ICT)</p>
             </div>
-            <div class="col-lg-3 col-md-4 mb-4">
-                <h6 class="fw-bold mb-3">Cảnh báo (Disclaimer)</h6>
-                <p class="text-muted small">Website chỉ cung cấp thông tin tham khảo, không thay thế lời khuyên, chẩn đoán hoặc điều trị từ bác sĩ hoặc chuyên gia dinh dưỡng.</p>
+
+            <div class="col-md-6 col-xl-4">
+                <h6 class="fw-bold mb-3">Thông tin</h6>
+                <p class="small text-muted mb-2">MealMate hỗ trợ lập kế hoạch bữa ăn, theo dõi dinh dưỡng và ghi lại thói quen ăn uống hằng ngày.</p>
+                <p class="small text-muted mb-2">Bạn có thể khám phá thư viện món ăn, nhận gợi ý thực đơn và sử dụng trợ lý AI để tham khảo thông tin dinh dưỡng.</p>
+                <p class="small text-muted mb-0">Thông tin trên website chỉ mang tính tham khảo, không thay thế tư vấn, chẩn đoán hoặc điều trị từ chuyên gia y tế.</p>
             </div>
         </div>
-        <hr class="mt-4 mb-4 text-muted">
-        <div class="text-center text-muted small">
-            &copy; <?php echo date('Y'); ?> <?php echo APP_NAME; ?>. 
+
+        <hr class="my-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <span class="text-muted">&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars(APP_NAME); ?>. Bảo lưu mọi quyền.</span>
+            <div class="d-flex flex-wrap gap-4">
+                <a href="#" class="text-decoration-none text-muted small">Chính sách bảo mật</a>
+                <a href="#" class="text-decoration-none text-muted small">Điều khoản dịch vụ</a>
+                <a href="#" class="text-decoration-none text-muted small">Chính sách cookie</a>
+            </div>
         </div>
     </div>
 </footer>
@@ -57,9 +79,117 @@
 <!-- Custom JS -->
 <script src="<?php echo BASE_URL; ?>/assets/js/main.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/main.js'); ?>"></script>
 <?php if (isset($extra_js)) echo $extra_js; ?>
+<script>
+(() => {
+    document.querySelectorAll('form[data-bulk-delete]').forEach(form => {
+        const group = form.dataset.bulkDelete;
+        const checkboxes = () => Array.from(document.querySelectorAll('[data-bulk-select]'))
+            .filter(checkbox => checkbox.dataset.bulkSelect === group);
+        const selectAll = () => Array.from(document.querySelectorAll('[data-bulk-select-all]'))
+            .find(checkbox => checkbox.dataset.bulkSelectAll === group);
+        const countElement = form.querySelector('[data-bulk-count]');
+        const submitButton = form.querySelector('button[type="submit"]')
+            || document.querySelector(`button[type="submit"][form="${form.id}"]`);
+
+        const updateSelection = () => {
+            const items = checkboxes();
+            const selectedCount = items.filter(checkbox => checkbox.checked).length;
+            if (countElement) countElement.textContent = selectedCount;
+            if (submitButton) submitButton.disabled = selectedCount === 0;
+            const selectAllCheckbox = selectAll();
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = items.length > 0 && selectedCount === items.length;
+                selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < items.length;
+            }
+        };
+
+        document.addEventListener('change', event => {
+            if (event.target.matches('[data-bulk-select-all]') && event.target.dataset.bulkSelectAll === group) {
+                checkboxes().forEach(checkbox => { checkbox.checked = event.target.checked; });
+                updateSelection();
+            } else if (event.target.matches('[data-bulk-select]') && event.target.dataset.bulkSelect === group) {
+                updateSelection();
+            }
+        });
+        form.addEventListener('submit', event => {
+            const selectedCount = checkboxes().filter(checkbox => checkbox.checked).length;
+            if (!selectedCount || !window.confirm(`Bạn có chắc chắn muốn xóa ${selectedCount} mục đã chọn?`)) {
+                event.preventDefault();
+            }
+        });
+        updateSelection();
+    });
+
+    const storageKey = 'mealmate-live-search-focus';
+    const restoreFocus = () => {
+        let state;
+        try {
+            state = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+        } catch (error) {
+            sessionStorage.removeItem(storageKey);
+            return;
+        }
+        if (!state) return;
+
+        sessionStorage.removeItem(storageKey);
+        if (state.path !== window.location.pathname) return;
+        const input = state.id
+            ? document.getElementById(state.id)
+            : document.querySelector(`form[data-live-search="reload"] [name="${CSS.escape(state.name)}"]`);
+        if (!input || input.value !== state.value) return;
+
+        input.focus({ preventScroll: true });
+        if (typeof input.setSelectionRange === 'function') {
+            input.setSelectionRange(state.start, state.end);
+        }
+    };
+
+    const bindLiveSearch = () => {
+        restoreFocus();
+        document.querySelectorAll('form[data-live-search="reload"]').forEach(form => {
+            const searchInput = form.querySelector('input[name="search"]');
+            if (!searchInput) return;
+
+            let submitTimer;
+            const submitSearch = () => {
+                const state = {
+                    path: window.location.pathname,
+                    id: searchInput.id,
+                    name: searchInput.name,
+                    value: searchInput.value,
+                    start: searchInput.selectionStart ?? searchInput.value.length,
+                    end: searchInput.selectionEnd ?? searchInput.value.length
+                };
+                sessionStorage.setItem(storageKey, JSON.stringify(state));
+                form.requestSubmit();
+            };
+
+            searchInput.addEventListener('input', () => {
+                window.clearTimeout(submitTimer);
+                submitTimer = window.setTimeout(submitSearch, 400);
+            });
+
+            form.querySelectorAll('select, input[type="date"]').forEach(filter => {
+                filter.addEventListener('change', () => {
+                    window.clearTimeout(submitTimer);
+                    submitSearch();
+                });
+            });
+
+            form.addEventListener('submit', () => window.clearTimeout(submitTimer));
+        });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindLiveSearch, { once: true });
+    } else {
+        bindLiveSearch();
+    }
+})();
+</script>
 <!-- Floating Chatbot Bubble -->
 <?php if (isset($_SESSION['user_id']) && (!isset($hide_footer) || !$hide_footer) && !isset($hide_chatbot)): ?>
-<div id="chatbot-bubble-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050; display: flex; flex-direction: column; align-items: flex-end;">
+<div id="chatbot-bubble-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; align-items: flex-end;">
     <!-- Cửa sổ Chat -->
     <div id="chatbot-window" class="glass-panel d-none mb-3" style="width: 350px; max-width: calc(100vw - 40px); overflow: hidden; display: flex; flex-direction: column;">
         <style>

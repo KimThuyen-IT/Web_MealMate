@@ -317,6 +317,26 @@ if (count($related_foods) < 4) {
 .recipe-timeline {
     position: relative;
     padding-left: 1rem;
+    max-height: min(10rem, 35vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #a8b5c7 transparent;
+    padding-right: 0.4rem;
+}
+.recipe-timeline::-webkit-scrollbar {
+    width: 5px;
+}
+.recipe-timeline::-webkit-scrollbar-track {
+    background: transparent;
+}
+.recipe-timeline::-webkit-scrollbar-thumb {
+    background: #a8b5c7;
+    border-radius: 5px;
+}
+.recipe-timeline::-webkit-scrollbar-thumb:hover {
+    background: #718198;
 }
 .recipe-step-item {
     position: relative;
@@ -683,6 +703,10 @@ if (count($related_foods) < 4) {
     .food-hero-img-wrap {
         height: 280px;
     }
+    .recipe-timeline {
+        max-height: 55vh;
+        padding-right: 0.25rem;
+    }
     .macro-value {
         font-size: 1.35rem;
     }
@@ -797,7 +821,7 @@ if (count($related_foods) < 4) {
                 </h5>
 
                 <?php if (count($instruction_steps) > 0): ?>
-                    <div class="recipe-timeline">
+                    <div class="recipe-timeline" data-lenis-prevent>
                         <?php foreach ($instruction_steps as $idx => $step): ?>
                             <div class="recipe-step-item">
                                 <div class="step-badge"><?php echo ($idx + 1); ?></div>
@@ -822,7 +846,7 @@ if (count($related_foods) < 4) {
 
         <!-- ================= CỘT PHẢI: CHI TIẾT DINH DƯỠNG & HÀNH ĐỘNG ================= -->
         <div class="col-lg-7 col-xl-7">
-            <div class="food-section-card h-100 d-flex flex-column justify-content-between">
+            <div class="food-section-card h-100 d-flex flex-column">
                 <div>
                     <!-- Health Highlights Badges -->
                     <?php if (!empty($health_tags)): ?>
@@ -1003,7 +1027,7 @@ if (count($related_foods) < 4) {
                 </div>
 
                 <!-- Bottom Action Buttons Group -->
-                <div class="action-buttons-group pt-3 border-top">
+                <div class="action-buttons-group mt-4 pt-3 border-top">
                     <div class="action-buttons-flex flex-column flex-sm-row">
                         <?php if (isset($_SESSION['user_id'])): ?>
                             <a href="<?php echo BASE_URL; ?>/user/add-meal.php?food_id=<?php echo $food['id']; ?>" class="btn-food-action flex-grow-1 shadow-sm text-decoration-none">

@@ -184,7 +184,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="card-body p-4 p-lg-5">
                     <?php display_flash_message(); ?>
                     
-                    <form method="GET" action="" class="mb-4">
+                    <form method="GET" action="" class="mb-4" data-live-search="reload">
                         <input type="hidden" name="date" value="<?php echo htmlspecialchars($date); ?>">
                         <input type="hidden" name="type" value="<?php echo htmlspecialchars($meal_type); ?>">
                         

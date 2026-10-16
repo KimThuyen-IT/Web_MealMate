@@ -42,6 +42,72 @@ function generate_csrf_token() {
 function verify_csrf_token($token) {
     return is_string($token) && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
+
+function render_pagination_links($current_page, $total_pages, $base_params = []) {
+    $current_page = max(1, (int)$current_page);
+    $total_pages = max(1, (int)$total_pages);
+
+    if ($total_pages <= 1) {
+        return '';
+    }
+
+    $build_url = function ($page) use ($base_params) {
+        $params = $base_params;
+        $params['page'] = (int)$page;
+        return '?' . http_build_query($params);
+    };
+
+    $pages = [];
+    $start = max(1, $current_page - 2);
+    $end = min($total_pages, $current_page + 2);
+
+    if ($current_page <= 3) {
+        $start = 1;
+        $end = min(5, $total_pages);
+    }
+
+    if ($current_page >= $total_pages - 2) {
+        $start = max(1, $total_pages - 4);
+        $end = $total_pages;
+    }
+
+    if ($start > 1) {
+        $pages[] = 1;
+        if ($start > 2) {
+            $pages[] = 'ellipsis';
+        }
+    }
+
+    foreach (range($start, $end) as $page) {
+        $pages[] = (int)$page;
+    }
+
+    if ($end < $total_pages) {
+        if ($end < $total_pages - 1) {
+            $pages[] = 'ellipsis';
+        }
+        $pages[] = $total_pages;
+    }
+
+    $html = '<ul class="pagination justify-content-center">';
+    $html .= '<li class="page-item ' . ($current_page <= 1 ? 'disabled' : '') . '"><a class="page-link" href="' . $build_url($current_page - 1) . '">Trước</a></li>';
+
+    foreach ($pages as $page) {
+        if ($page === 'ellipsis') {
+            $html .= '<li class="page-item disabled"><span class="page-link">…</span></li>';
+            continue;
+        }
+
+        $active = $page == $current_page ? 'active' : '';
+        $html .= '<li class="page-item ' . $active . '"><a class="page-link" href="' . $build_url($page) . '">' . $page . '</a></li>';
+    }
+
+    $html .= '<li class="page-item ' . ($current_page >= $total_pages ? 'disabled' : '') . '"><a class="page-link" href="' . $build_url($current_page + 1) . '">Sau</a></li>';
+    $html .= '</ul>';
+
+    return $html;
+}
+
 function is_valid_date($date) {
     if (!is_string($date)) return false;
     $parsed = DateTime::createFromFormat('!Y-m-d', $date);

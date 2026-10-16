@@ -281,7 +281,6 @@ $is_user_area = isset($_SESSION['user_id']) && str_contains($request_path, '/use
                     </div>
                 <?php else: ?>
                     <a href="<?php echo BASE_URL; ?>/auth/login.php" class="btn btn-outline-success me-2 fw-bold">Đăng nhập</a>
-                    <a href="<?php echo BASE_URL; ?>/auth/register.php" class="btn btn-success btn-glow">Đăng ký miễn phí</a>
                 <?php endif; ?>
             </div>
         <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -303,6 +302,9 @@ $is_user_area = isset($_SESSION['user_id']) && str_contains($request_path, '/use
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'mystery-box.php') ? 'active text-success' : ''; ?>" href="<?php echo BASE_URL; ?>/mystery-box.php">Hôm nay ăn gì <span class="badge bg-warning text-dark rounded-pill fw-bold" style="font-size: 0.65em; vertical-align: top;">HOT</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'contact.php') ? 'active text-success' : ''; ?>" href="<?php echo BASE_URL; ?>/contact.php">Liên hệ</a>
                 </li>
 
             </ul>

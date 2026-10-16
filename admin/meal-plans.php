@@ -82,7 +82,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     redirect('/admin/meal-plans.php');
 }
 
-$stmt = $conn->query("SELECT * FROM meal_plans ORDER BY created_at DESC");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Yêu cầu không hợp lệ.';
+    } else {
+        $selectedIds = $_POST['plan_ids'] ?? [];
+        $cleanIds = [];
+        if (is_array($selectedIds)) {
+            foreach ($selectedIds as $selectedId) {
+                $id = filter_var($selectedId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($id !== false) {
+                    $cleanIds[] = (int)$id;
+                }
+            }
+        }
+        $cleanIds = array_values(array_unique($cleanIds));
+
+        if (!$cleanIds) {
+            $_SESSION['error'] = 'Chọn ít nhất một thực đơn để xóa.';
+        } else {
+            try {
+                $conn->beginTransaction();
+                $planStmt = $conn->prepare('SELECT id FROM meal_plans WHERE id = :id FOR UPDATE');
+                $deleteFavorites = $conn->prepare('DELETE FROM favorite_meal_plans WHERE meal_plan_id = :id');
+                $deleteItems = $conn->prepare('DELETE FROM meal_plan_items WHERE meal_plan_meal_id IN (SELECT id FROM meal_plan_meals WHERE meal_plan_id = :id)');
+                $deleteMeals = $conn->prepare('DELETE FROM meal_plan_meals WHERE meal_plan_id = :id');
+                $deletePlan = $conn->prepare('DELETE FROM meal_plans WHERE id = :id');
+                $deletedCount = 0;
+
+                foreach ($cleanIds as $id) {
+                    $planStmt->execute([':id' => $id]);
+                    if (!$planStmt->fetch(PDO::FETCH_ASSOC)) {
+                        continue;
+                    }
+                    $deleteFavorites->execute([':id' => $id]);
+                    $deleteItems->execute([':id' => $id]);
+                    $deleteMeals->execute([':id' => $id]);
+                    $deletePlan->execute([':id' => $id]);
+                    $deletedCount += $deletePlan->rowCount();
+                }
+                $conn->commit();
+                $_SESSION['success'] = "Đã xóa {$deletedCount} thực đơn mẫu.";
+            } catch (Throwable $e) {
+                if ($conn->inTransaction()) {
+                    $conn->rollBack();
+                }
+                error_log('Không thể xóa hàng loạt thực đơn mẫu: ' . $e->getMessage());
+                $_SESSION['error'] = 'Không thể xóa các thực đơn đã chọn. Vui lòng thử lại.';
+            }
+        }
+    }
+    redirect('/admin/meal-plans.php');
+}
+
+$searchFilter = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
+$statusFilter = isset($_GET['status']) && is_string($_GET['status']) && in_array($_GET['status'], ['active', 'inactive'], true)
+    ? $_GET['status']
+    : '';
+$searchConditions = [];
+$searchParams = [];
+if ($searchFilter !== '') {
+    $searchConditions[] = "(CAST(id AS CHAR) LIKE :search_id
+        OR name LIKE :search_name
+        OR slug LIKE :search_slug
+        OR description LIKE :search_description
+        OR diet_type LIKE :search_diet_type
+        OR goal_type LIKE :search_goal_type)";
+    $searchPattern = '%' . $searchFilter . '%';
+    $searchParams = [
+        ':search_id' => $searchPattern,
+        ':search_name' => $searchPattern,
+        ':search_slug' => $searchPattern,
+        ':search_description' => $searchPattern,
+        ':search_diet_type' => $searchPattern,
+        ':search_goal_type' => $searchPattern
+    ];
+}
+if ($statusFilter !== '') {
+    $searchConditions[] = 'status = :status';
+    $searchParams[':status'] = $statusFilter;
+}
+$searchWhere = $searchConditions ? 'WHERE ' . implode(' AND ', $searchConditions) : '';
+$stmt = $conn->prepare("SELECT * FROM meal_plans {$searchWhere} ORDER BY created_at DESC");
+$stmt->execute($searchParams);
 $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $current_page = 'meal-plans.php';
@@ -97,11 +179,16 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         
         <div class="col-md-9 col-lg-10">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
                 <h2 class="fw-bold mb-0">Thực đơn Mẫu (Meal Plans)</h2>
-                <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="openMealPlanModal(null)">
-                    <i class="bi bi-plus-circle me-1"></i>Thêm Thực đơn mới
-                </button>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" form="bulkMealPlanDeleteForm" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap" disabled>
+                        <i class="bi bi-trash me-1"></i>Xóa đã chọn (<span data-bulk-count>0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="openMealPlanModal(null)">
+                        <i class="bi bi-plus-circle me-1"></i>Thêm Thực đơn mới
+                    </button>
+                </div>
             </div>
 
             <?php if (isset($_SESSION['success'])): ?>
@@ -110,6 +197,42 @@ require_once __DIR__ . '/../includes/header.php';
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?php echo htmlspecialchars($_SESSION['error'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+            <form method="GET" action="<?php echo BASE_URL; ?>/admin/meal-plans.php" class="card glass-card border-0 rounded-4 shadow-sm mb-4" data-live-search="reload">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-lg-6">
+                            <label for="filter_meal_plan_search" class="form-label small fw-semibold">Tìm kiếm thực đơn mẫu</label>
+                            <input type="search" class="form-control" id="filter_meal_plan_search" name="search" value="<?php echo htmlspecialchars($searchFilter, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nhập ID, tên, slug, chế độ ăn hoặc mục tiêu">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label for="filter_meal_plan_status" class="form-label small fw-semibold">Trạng thái</label>
+                            <select class="form-select" id="filter_meal_plan_status" name="status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Đang bật</option>
+                                <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Đang tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex justify-content-end gap-2">
+                            <a href="<?php echo BASE_URL; ?>/admin/meal-plans.php" class="btn btn-outline-secondary rounded-pill px-3">Xóa lọc</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-search me-1"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <form method="POST" id="bulkMealPlanDeleteForm" data-bulk-delete="meal-plans">
+                <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                <input type="hidden" name="action" value="bulk_delete">
+            </form>
 
             <div class="card glass-card border-0 rounded-4 shadow-sm overflow-hidden mb-4">
                 <div class="card-body p-0">
@@ -117,6 +240,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead style="background: rgba(243, 244, 246, 0.7);">
                                 <tr>
+                                    <th><input type="checkbox" class="form-check-input" data-bulk-select-all="meal-plans" aria-label="Chọn tất cả thực đơn"></th>
                                     <th>ID</th>
                                     <th>Tên thực đơn</th>
                                     <th>Mục tiêu</th>
@@ -128,6 +252,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <tbody>
                                 <?php foreach ($plans as $p): ?>
                                 <tr>
+                                    <td><input type="checkbox" class="form-check-input" name="plan_ids[]" value="<?php echo (int)$p['id']; ?>" form="bulkMealPlanDeleteForm" data-bulk-select="meal-plans" aria-label="Chọn thực đơn <?php echo htmlspecialchars($p['name'], ENT_QUOTES, 'UTF-8'); ?>"></td>
                                     <td>#<?php echo $p['id']; ?></td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -172,7 +297,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php if (empty($plans)): ?>
-                                    <tr><td colspan="6" class="text-center py-5 text-muted">Chưa có thực đơn nào.</td></tr>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted"><?php echo $searchFilter !== '' || $statusFilter !== '' ? 'Không tìm thấy thực đơn phù hợp.' : 'Chưa có thực đơn nào.'; ?></td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>

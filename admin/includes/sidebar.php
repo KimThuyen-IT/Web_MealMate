@@ -1,5 +1,8 @@
 <?php
 $current_page = basename($_SERVER['PHP_SELF']);
+$is_root_admin = isset($_SESSION['user_email'])
+    && defined('ROOT_ADMIN_EMAIL')
+    && strtolower(trim($_SESSION['user_email'])) === strtolower(trim(ROOT_ADMIN_EMAIL));
 
 // BUG-02: Đếm số tin nhắn hỗ trợ chưa đọc để hiển thị badge trên menu admin
 $admin_unread_support = 0;
@@ -74,9 +77,11 @@ if (isset($conn)) {
             <a href="<?php echo BASE_URL; ?>/admin/chat-logs.php" class="admin-sidebar-item <?php echo $current_page == 'chat-logs.php' ? 'active' : ''; ?>">
                 <i class="bi bi-robot me-2"></i>Lịch sử Chatbot AI
             </a>
-            <a href="<?php echo BASE_URL; ?>/admin/ai-settings.php" class="admin-sidebar-item <?php echo $current_page == 'ai-settings.php' ? 'active' : ''; ?>">
-                <i class="bi bi-key-fill me-2 text-warning"></i>Cấu hình API Key AI
-            </a>
+            <?php if ($is_root_admin): ?>
+                <a href="<?php echo BASE_URL; ?>/admin/ai-settings.php" class="admin-sidebar-item <?php echo $current_page == 'ai-settings.php' ? 'active' : ''; ?>">
+                    <i class="bi bi-key-fill me-2 text-warning"></i>Cấu hình API Key AI
+                </a>
+            <?php endif; ?>
             <a href="<?php echo BASE_URL; ?>/auth/logout.php" class="admin-sidebar-item admin-sidebar-item-danger">
                 <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
             </a>

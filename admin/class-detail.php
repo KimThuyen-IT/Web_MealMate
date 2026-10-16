@@ -446,23 +446,7 @@ require_once '../includes/header.php';
                 <?php if ($total_pages > 1): ?>
                 <div class="card-footer bg-transparent border-top py-3 d-flex justify-content-center">
                     <nav aria-label="Page navigation">
-                        <ul class="pagination mb-0">
-                            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                                <a class="page-link" href="?id=<?= $class_id ?>&page=<?= $page - 1 ?>" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                            <?php for ($p = 1; $p <= $total_pages; $p++): ?>
-                                <li class="page-item <?= ($p == $page) ? 'active' : '' ?>">
-                                    <a class="page-link" href="?id=<?= $class_id ?>&page=<?= $p ?>"><?= $p ?></a>
-                                </li>
-                            <?php endfor; ?>
-                            <li class="page-item <?= ($page >= $total_pages) ? 'disabled' : '' ?>">
-                                <a class="page-link" href="?id=<?= $class_id ?>&page=<?= $page + 1 ?>" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        </ul>
+                        <?php echo render_pagination_links($page, $total_pages, ['id' => $class_id]); ?>
                     </nav>
                 </div>
                 <?php endif; ?>

@@ -377,6 +377,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     redirect('/admin/foods.php');
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete_foods') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        set_flash_message('danger', 'Yêu cầu không hợp lệ.');
+    } else {
+        $selectedIds = $_POST['food_ids'] ?? [];
+        $cleanIds = [];
+        if (is_array($selectedIds)) {
+            foreach ($selectedIds as $selectedId) {
+                $id = filter_var($selectedId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($id !== false) {
+                    $cleanIds[] = (int)$id;
+                }
+            }
+        }
+        $cleanIds = array_values(array_unique($cleanIds));
+
+        if (!$cleanIds) {
+            set_flash_message('warning', 'Chọn ít nhất một món ăn để xóa.');
+        } else {
+            try {
+                $conn->beginTransaction();
+                $foodStmt = $conn->prepare('SELECT id FROM foods WHERE id = :id FOR UPDATE');
+                $referenceStmt = $conn->prepare("
+                    SELECT
+                        (SELECT COUNT(*) FROM meal_log_items WHERE food_id = :log_food_id) +
+                        (SELECT COUNT(*) FROM meal_plan_items WHERE food_id = :plan_food_id) AS total_references
+                ");
+                $hideStmt = $conn->prepare("UPDATE foods SET status = 'inactive' WHERE id = :id");
+                $deleteStmt = $conn->prepare('DELETE FROM foods WHERE id = :id');
+                $deletedCount = 0;
+                $hiddenCount = 0;
+
+                foreach ($cleanIds as $id) {
+                    $foodStmt->execute([':id' => $id]);
+                    if (!$foodStmt->fetch(PDO::FETCH_ASSOC)) {
+                        continue;
+                    }
+
+                    $referenceStmt->execute([
+                        ':log_food_id' => $id,
+                        ':plan_food_id' => $id
+                    ]);
+                    if ((int)$referenceStmt->fetchColumn() > 0) {
+                        $hideStmt->execute([':id' => $id]);
+                        $hiddenCount++;
+                    } else {
+                        $deleteStmt->execute([':id' => $id]);
+                        $deletedCount += $deleteStmt->rowCount();
+                    }
+                }
+                $conn->commit();
+
+                set_flash_message('success', "Đã xóa {$deletedCount} món ăn và ẩn {$hiddenCount} món đang được sử dụng.");
+            } catch (Throwable $e) {
+                if ($conn->inTransaction()) {
+                    $conn->rollBack();
+                }
+                error_log('Không thể xóa hàng loạt món ăn: ' . $e->getMessage());
+                set_flash_message('danger', 'Không thể xóa các món ăn đã chọn. Vui lòng thử lại.');
+            }
+        }
+    }
+    redirect('/admin/foods.php');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_food') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         set_flash_message('danger', 'Yêu cầu không hợp lệ.');
@@ -440,26 +505,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     redirect('/admin/foods.php');
 }
 
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
-$limit = 10;
-$offset = ($page - 1) * $limit;
+$searchFilter = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
+$statusFilter = isset($_GET['status']) && is_string($_GET['status']) ? $_GET['status'] : '';
+if (!in_array($statusFilter, ['active', 'inactive'], true)) {
+    $statusFilter = '';
+}
 
-// Đếm tổng số để phân trang
-$total_foods = $conn->query("SELECT COUNT(id) FROM foods")->fetchColumn();
-$total_pages = ceil($total_foods / $limit);
+$searchConditions = [];
+$searchParams = [];
+if ($searchFilter !== '') {
+    $searchConditions[] = "(CAST(f.id AS CHAR) LIKE :search_id
+        OR f.name LIKE :search_name
+        OR c.name LIKE :search_category)";
+    $searchPattern = '%' . $searchFilter . '%';
+    $searchParams = [
+        ':search_id' => $searchPattern,
+        ':search_name' => $searchPattern,
+        ':search_category' => $searchPattern
+    ];
+}
+if ($statusFilter !== '') {
+    $searchConditions[] = 'f.status = :status';
+    $searchParams[':status'] = $statusFilter;
+}
+$searchWhere = $searchConditions ? 'WHERE ' . implode(' AND ', $searchConditions) : '';
+
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = 10;
+
+$stmtCount = $conn->prepare("
+    SELECT COUNT(f.id)
+    FROM foods f
+    LEFT JOIN food_categories c ON f.category_id = c.id
+    {$searchWhere}
+");
+$stmtCount->execute($searchParams);
+$total_foods = (int)$stmtCount->fetchColumn();
+$total_pages = max(1, (int)ceil($total_foods / $limit));
+if ($page > $total_pages) {
+    $page = $total_pages;
+}
+$offset = ($page - 1) * $limit;
 
 // Lấy danh sách món ăn
 $stmt = $conn->prepare("
     SELECT f.*, c.name as category_name
     FROM foods f 
     LEFT JOIN food_categories c ON f.category_id = c.id
+    {$searchWhere}
     ORDER BY f.id DESC LIMIT :limit OFFSET :offset
 ");
+foreach ($searchParams as $name => $value) {
+   $stmt->bindValue($name, $value, PDO::PARAM_STR);
+}
 $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
 $stmt->execute();
 $foods = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$paginationParams = [];
+if ($searchFilter !== '') {
+    $paginationParams['search'] = $searchFilter;
+}
+if ($statusFilter !== '') {
+    $paginationParams['status'] = $statusFilter;
+}
+$hasFilters = $searchFilter !== '' || $statusFilter !== '';
 
 // Lấy danh mục đang hoạt động để hiển thị trong Modal
 $categories = $conn->query("SELECT id, name FROM food_categories WHERE status = 'active' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
@@ -477,12 +587,16 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
                 <div>
                     <h3 class="fw-bold mb-0">Quản lý Món ăn</h3>
-                    <p class="text-muted small mb-0">Tổng cộng: <?php echo $total_foods; ?> món ăn (10 món/trang)</p>
+                    <p class="text-muted small mb-0" id="food-result-count"><?php echo $hasFilters ? 'Kết quả lọc: ' : 'Tổng cộng: '; ?><?php echo $total_foods; ?> món ăn (10 món/trang)</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="<?php echo BASE_URL; ?>/admin/foods.php?action=sample_excel" class="btn btn-sm btn-outline-secondary rounded-pill">
-                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Tải file mẫu Excel
-                    </a>
+                    <form method="POST" id="bulkFoodDeleteForm" data-bulk-delete="foods" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
+                        <input type="hidden" name="action" value="bulk_delete_foods">
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill" disabled>
+                            <i class="bi bi-trash me-1"></i>Xóa đã chọn (<span data-bulk-count>0</span>)
+                        </button>
+                    </form>
                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill" data-bs-toggle="modal" data-bs-target="#importFoodsModal">
                         <i class="bi bi-file-earmark-arrow-up me-1"></i>Nhập từ Excel
                     </button>
@@ -492,13 +606,41 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
             <?php display_flash_message(); ?>
-            
+
+            <form method="GET" action="<?php echo BASE_URL; ?>/admin/foods.php" class="card glass-card border-0 rounded-4 shadow-sm mb-4" data-live-search="ajax">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-lg-6">
+                            <label for="filter_search" class="form-label small fw-semibold">Tìm kiếm</label>
+                            <input type="search" class="form-control" id="filter_search" name="search" value="<?php echo htmlspecialchars($searchFilter, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Nhập ID, tên món ăn hoặc danh mục">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label for="filter_status" class="form-label small fw-semibold">Trạng thái</label>
+                            <select class="form-select" id="filter_status" name="status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Hoạt động</option>
+                                <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Đã ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex justify-content-end gap-2">
+                            <a href="<?php echo BASE_URL; ?>/admin/foods.php" class="btn btn-outline-secondary rounded-pill px-3">Xóa lọc</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-search me-1"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </div>
+                    <div id="food-filter-error" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
+                </div>
+            </form>
+
+            <div id="foodResults">
             <div class="card glass-card border-0 rounded-4 shadow-sm overflow-hidden mb-4">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead style="background: rgba(243, 244, 246, 0.7);">
                                 <tr>
+                                    <th class="ps-3"><input type="checkbox" class="form-check-input" data-bulk-select-all="foods" aria-label="Chọn tất cả món ăn"></th>
                                     <th class="ps-4">ID</th>
                                     <th>Tên món ăn</th>
                                     <th>Danh mục</th>
@@ -511,6 +653,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <tbody>
                                 <?php foreach ($foods as $f): ?>
                                 <tr>
+                                    <td class="ps-3"><input type="checkbox" class="form-check-input" name="food_ids[]" value="<?php echo (int)$f['id']; ?>" form="bulkFoodDeleteForm" data-bulk-select="foods" aria-label="Chọn món <?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?>"></td>
                                     <td><?php echo $f['id']; ?></td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -570,6 +713,13 @@ require_once __DIR__ . '/../includes/header.php';
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                                <?php if (empty($foods)): ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <?php echo $hasFilters ? 'Không tìm thấy món ăn phù hợp.' : 'Chưa có món ăn nào.'; ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -688,22 +838,12 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Phân trang -->
             <?php if ($total_pages > 1): ?>
                 <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page - 1; ?>">Trước</a>
-                        </li>
-                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                            </li>
-                        <?php endfor; ?>
-                        <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-                            <a class="page-link" href="?page=<?php echo $page + 1; ?>">Sau</a>
-                        </li>
-                    </ul>
+                    <?php echo render_pagination_links($page, $total_pages, $paginationParams); ?>
+                </nav>
                 </nav>
             <?php endif; ?>
-            
+            </div>
+
         </div>
     </div>
 </div>
@@ -1135,6 +1275,107 @@ document.getElementById('food_modal_image')?.addEventListener('change', function
             e.stopPropagation();
         }, { passive: true });
     }
+})();
+</script>
+
+<script>
+(() => {
+    const form = document.querySelector('form[action$="/admin/foods.php"][method="GET"]');
+    const searchInput = document.getElementById('filter_search');
+    const statusSelect = document.getElementById('filter_status');
+    const results = document.getElementById('foodResults');
+    const resultCount = document.getElementById('food-result-count');
+    const errorMessage = document.getElementById('food-filter-error');
+    if (!form || !searchInput || !statusSelect || !results || !resultCount || !errorMessage) return;
+
+    let debounceTimer;
+    let activeRequest;
+
+    const buildFilterUrl = () => {
+        const url = new URL(form.action, window.location.href);
+        const formData = new FormData(form);
+        for (const [name, value] of formData.entries()) {
+            if (typeof value === 'string' && value.trim() !== '') {
+                url.searchParams.set(name, value.trim());
+            } else {
+                url.searchParams.delete(name);
+            }
+        }
+        url.searchParams.delete('page');
+        return url;
+    };
+
+    const loadResults = async (url, addHistoryEntry = false) => {
+        if (activeRequest) activeRequest.abort();
+        activeRequest = new AbortController();
+        const request = activeRequest;
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: request.signal
+            });
+            if (!response.ok) {
+                throw new Error(`Không thể tải kết quả (HTTP ${response.status}).`);
+            }
+
+            const documentFromResponse = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const updatedResults = documentFromResponse.getElementById('foodResults');
+            const updatedCount = documentFromResponse.getElementById('food-result-count');
+            if (!updatedResults || !updatedCount) {
+                throw new Error('Phản hồi tìm kiếm không hợp lệ.');
+            }
+
+            results.innerHTML = updatedResults.innerHTML;
+            resultCount.textContent = updatedCount.textContent;
+            errorMessage.classList.add('d-none');
+            errorMessage.textContent = '';
+
+            const nextUrl = new URL(response.url);
+            nextUrl.searchParams.delete('ajax');
+            if (addHistoryEntry) {
+                window.history.pushState({}, '', nextUrl);
+            } else {
+                window.history.replaceState({}, '', nextUrl);
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            errorMessage.textContent = error.message || 'Đã xảy ra lỗi khi lọc món ăn.';
+            errorMessage.classList.remove('d-none');
+        } finally {
+            if (activeRequest === request) activeRequest = null;
+        }
+    };
+
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        window.clearTimeout(debounceTimer);
+        loadResults(buildFilterUrl());
+    });
+
+    searchInput.addEventListener('input', () => {
+        window.clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(() => loadResults(buildFilterUrl()), 300);
+    });
+
+    statusSelect.addEventListener('change', () => {
+        window.clearTimeout(debounceTimer);
+        loadResults(buildFilterUrl());
+    });
+
+    results.addEventListener('click', event => {
+        const link = event.target.closest('nav a.page-link');
+        if (!link || !link.href || link.closest('.disabled, .active')) return;
+        event.preventDefault();
+        loadResults(new URL(link.href), true);
+    });
+
+    window.addEventListener('popstate', () => {
+        const url = new URL(window.location.href);
+        searchInput.value = url.searchParams.get('search') || '';
+        statusSelect.value = url.searchParams.get('status') || '';
+        loadResults(url);
+    });
 })();
 </script>
 
